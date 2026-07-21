@@ -43,7 +43,7 @@ export default function Home() {
       <h1 className="text-4xl font-bold text-blue-600">DealMind</h1>
       <p className="text-gray-500 mb-6">Find the best deals with AI</p>
         <form onSubmit={handleSubmit}>
-          <input className="border border-gray-300 rounded-lg px-4 py-2 w-80"
+          <input className="border border-gray-300 rounded-lg px-4 py-2 w-80 bg-white text-gray-900"
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}

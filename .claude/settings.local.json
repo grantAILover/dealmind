@@ -7,7 +7,11 @@
       "PowerShell(npm install --save-dev cross-env)",
       "Bash(git --version)",
       "Bash(git init *)",
-      "Bash(git add *)"
+      "Bash(git add *)",
+      "Bash(git branch *)",
+      "Bash(git remote *)",
+      "Bash(git push *)",
+      "Bash(git ls-remote *)"
     ]
   }
 }
