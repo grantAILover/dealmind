@@ -49,7 +49,7 @@ export default function Home() {
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search for a product..."
           />
-          <button className="bg-blue-600 text-white px-6 py-2 rounded-lg ml-2" type="submit">
+          <button className="bg-blue-600 text-white px-6 py-2 rounded-lg ml-2 disabled:opacity-50" type="submit" disabled={loading}>
             Search
           </button>
         </form>
