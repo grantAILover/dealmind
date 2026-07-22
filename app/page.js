@@ -40,7 +40,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gray-100 p-8">
-      <h1 className="text-4xl font-bold text-blue-600">DealMind</h1>
+      <h1 className="text-4xl font-bold text-blue-600">Bapkes</h1>
       <p className="text-gray-500 mb-6">Find the best deals with AI</p>
         <form onSubmit={handleSubmit}>
           <input className="border border-gray-300 rounded-lg px-4 py-2 w-80 bg-white text-gray-900"
