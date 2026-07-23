@@ -57,7 +57,7 @@ export default function Home() {
         {error && <p className="text-red-600">{error}</p>}
         <div className="grid grid-cols-3 gap-4 mt-8">
           {results.map(product => (
-  <ProductCard key={product.id} name={product.name} price={product.price} dealScore={product.dealScore} />
+  <ProductCard key={product.id} name={product.name} price={product.price} dealScore={product.dealScore} store={product.store} />
 ))}
         </div>
         
