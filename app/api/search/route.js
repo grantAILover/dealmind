@@ -21,7 +21,7 @@ export async function POST(request) {
     // Naujas dalykas: duodame Claude web search įrankį.
     // max_uses riboja, kiek kartų jis gali ieškoti (kad nekainuotų per daug).
     tools: [
-      { type: 'web_search_20260209', name: 'web_search', max_uses: 5 }
+      { type: 'web_search_20260209', name: 'web_search', max_uses: 2 }
     ],
     messages: [
       {

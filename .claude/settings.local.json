@@ -17,7 +17,8 @@
       "Bash(curl -s \"https://dealmind-ten.vercel.app/api/../\")",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000)",
       "Bash(curl -s -m 120 -X POST http://localhost:3000/api/search -H \"Content-Type: application/json\" -d '{\"query\":\"logitech mx master 3s mouse\"}')",
-      "Bash(echo \"=== exit: $? ===\")"
+      "Bash(echo \"=== exit: $? ===\")",
+      "Bash(curl -s -m 120 -X POST http://localhost:3000/api/search -H \"Content-Type: application/json\" -d '{\"query\":\"anker powerbank 20000mah\"}')"
     ]
   }
 }
