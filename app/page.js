@@ -69,7 +69,7 @@ export default function Home() {
         {checkedAt && <p className="text-gray-500 text-sm mb-2">Checked {timeAgo(checkedAt)}</p>}
         <div className="grid grid-cols-3 gap-4 mt-8">
           {results.map(product => (
-  <ProductCard key={product.id} name={product.name} price={product.price} dealScore={product.dealScore} store={product.store} />
+  <ProductCard key={product.id} name={product.name} price={product.price} dealScore={product.dealScore} store={product.store} url={product.url} />
 ))}
         </div>
         

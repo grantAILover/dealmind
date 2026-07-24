@@ -1,7 +1,7 @@
 "use client";
 import { useState } from 'react';
 
-export default function ProductCard({ name, price, dealScore, store }) {
+export default function ProductCard({ name, price, dealScore, store, url }) {
   const [saved, setSave] = useState(false);
 
   let text;
@@ -22,7 +22,9 @@ export default function ProductCard({ name, price, dealScore, store }) {
 
   return (
     <div className="bg-white border border-gray-200 rounded-lg shadow-md p-4">
-      <p className="font-bold text-lg">{name}</p>
+      <a href={url} target="_blank" rel="sponsored noopener noreferrer">
+      <p className="font-bold text-lg text-blue-700 hover:underline">{name}</p>
+        </a>
       <p className="text-blue-600 text-xl">€{price}</p>
       <p className="text-gray-500 text-sm">at {store}</p>
       <span className={`text-sm font-bold px-2 py-1 rounded ${scoreColor}`}>
