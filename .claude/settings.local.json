@@ -21,7 +21,12 @@
       "Bash(curl -s -m 120 -X POST http://localhost:3000/api/search -H \"Content-Type: application/json\" -d '{\"query\":\"anker powerbank 20000mah\"}')",
       "Bash(curl -s -m 120 -X POST http://localhost:3000/api/search -H \"Content-Type: application/json\" -d '{\"query\":\"samsung galaxy buds2 pro\"}')",
       "Bash(curl -s -m 150 -X POST http://localhost:3000/api/search -H \"Content-Type: application/json\" -d '{\"query\":\"samsung galaxy buds2 pro\"}')",
-      "Bash(curl -s -m 150 -X POST http://localhost:3000/api/search -H \"Content-Type: application/json\" -d '{\"query\":\"jbl flip 6 speaker\"}')"
+      "Bash(curl -s -m 150 -X POST http://localhost:3000/api/search -H \"Content-Type: application/json\" -d '{\"query\":\"jbl flip 6 speaker\"}')",
+      "Bash(npm install *)",
+      "Bash(time curl -s -m 150 -X POST http://localhost:3000/api/search -H \"Content-Type: application/json\" -d '{\"query\":\"beats studio buds\"}')",
+      "Bash(node --use-system-ca \"C:/Users/Intel/AppData/Local/Temp/claude/D--dealmind/c8f20b53-dcdf-4740-9d1e-77c436addd7b/scratchpad/test-supabase.mjs\")",
+      "Bash(node --use-system-ca test-supabase.mjs)",
+      "Bash(time curl -s -m 60 -X POST http://localhost:3000/api/search -H \"Content-Type: application/json\" -d '{\"query\":\"beats studio buds\"}')"
     ]
   }
 }

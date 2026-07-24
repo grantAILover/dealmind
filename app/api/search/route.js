@@ -1,7 +1,9 @@
 import Anthropic from '@anthropic-ai/sdk';
+import { createClient } from '@supabase/supabase-js';
 
 const client = new Anthropic();
-const cache = new Map();
+// Supabase klientas jungiasi prie tavo duomenų bazės (URL + slaptas raktas iš .env.local).
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 
 // Web search užtrunka ilgai — prašome Vercel duoti funkcijai iki 60s
 // (nemokamo plano maksimumas), kad paieška nebūtų nutraukta.
@@ -11,8 +13,17 @@ export async function POST(request) {
   const body = await request.json();
   const key = body.query.toLowerCase().trim();
 
-  if (cache.has(key)) {
-    return Response.json({ results: cache.get(key) });
+  // 1. Patikrinam cache DUOMENŲ BAZĖJE (ne atmintyje) — išlieka ir bendra visiems serveriams.
+  // { data: cached } — destructuring (Day 2!). .eq('query', key) = "kur stulpelis query lygus key".
+  // .maybeSingle() = grąžink vieną eilutę arba null, jei nerasta.
+  const { data: cached } = await supabase
+    .from('search_cache')
+    .select('results')
+    .eq('query', key)
+    .maybeSingle();
+
+  if (cached) {
+    return Response.json({ results: cached.results });
   }
 
   const message = await client.messages.create({
@@ -60,6 +71,8 @@ Respond with ONLY the JSON array, no other text.`
 
   const results = JSON.parse(fullText.slice(start, end + 1));
 
-  cache.set(key, results);
+  // Išsaugom į duomenų bazę. upsert = "įrašyk; o jei toks query jau yra, atnaujink".
+  await supabase.from('search_cache').upsert({ query: key, results: results });
+
   return Response.json({ results: results });
 }
