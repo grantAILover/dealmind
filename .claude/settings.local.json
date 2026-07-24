@@ -26,7 +26,9 @@
       "Bash(time curl -s -m 150 -X POST http://localhost:3000/api/search -H \"Content-Type: application/json\" -d '{\"query\":\"beats studio buds\"}')",
       "Bash(node --use-system-ca \"C:/Users/Intel/AppData/Local/Temp/claude/D--dealmind/c8f20b53-dcdf-4740-9d1e-77c436addd7b/scratchpad/test-supabase.mjs\")",
       "Bash(node --use-system-ca test-supabase.mjs)",
-      "Bash(time curl -s -m 60 -X POST http://localhost:3000/api/search -H \"Content-Type: application/json\" -d '{\"query\":\"beats studio buds\"}')"
+      "Bash(time curl -s -m 60 -X POST http://localhost:3000/api/search -H \"Content-Type: application/json\" -d '{\"query\":\"beats studio buds\"}')",
+      "Bash(time curl -s -m 90 -X POST https://dealmind-ten.vercel.app/api/search -H \"Content-Type: application/json\" -d '{\"query\":\"beats studio buds\"}')",
+      "Bash(curl -s -m 90 -w \"\\\\n=== HTTP status: %{http_code} ===\\\\n\" -X POST https://dealmind-ten.vercel.app/api/search -H \"Content-Type: application/json\" -d '{\"query\":\"beats studio buds\"}')"
     ]
   }
 }

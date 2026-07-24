@@ -13,17 +13,23 @@ export async function POST(request) {
   const body = await request.json();
   const key = body.query.toLowerCase().trim();
 
-  // 1. Patikrinam cache DUOMENŲ BAZĖJE (ne atmintyje) — išlieka ir bendra visiems serveriams.
-  // { data: cached } — destructuring (Day 2!). .eq('query', key) = "kur stulpelis query lygus key".
-  // .maybeSingle() = grąžink vieną eilutę arba null, jei nerasta.
+  // 1. Patikrinam cache DUOMENŲ BAZĖJE. Imame ir created_at — kada įrašyta (TTL patikrai).
   const { data: cached } = await supabase
     .from('search_cache')
-    .select('results')
+    .select('results, created_at')
     .eq('query', key)
     .maybeSingle();
 
+  // TTL: naudojame cache TIK jei jis šviežesnis nei 24 valandos.
+  const DAY_MS = 24 * 60 * 60 * 1000;
   if (cached) {
-    return Response.json({ results: cached.results });
+    // Kiek laiko praėjo nuo įrašymo (milisekundėmis).
+    const ageMs = Date.now() - new Date(cached.created_at).getTime();
+    if (ageMs < DAY_MS) {
+      // Dar šviežias — grąžinam iš cache + kada patikrinta.
+      return Response.json({ results: cached.results, checkedAt: cached.created_at });
+    }
+    // Senesnis nei 24h — NEgrąžinam, o einam ieškoti šviežių kainų žemiau.
   }
 
   const message = await client.messages.create({
@@ -71,8 +77,10 @@ Respond with ONLY the JSON array, no other text.`
 
   const results = JSON.parse(fullText.slice(start, end + 1));
 
-  // Išsaugom į duomenų bazę. upsert = "įrašyk; o jei toks query jau yra, atnaujink".
-  await supabase.from('search_cache').upsert({ query: key, results: results });
+  // Išsaugom su ŠVIEŽIA data. created_at nustatome patys į "dabar", nes upsert
+  // atnaujindamas seną eilutę kitaip paliktų seną datą (ir liktų amžinai "pasenęs").
+  const now = new Date().toISOString();
+  await supabase.from('search_cache').upsert({ query: key, results: results, created_at: now });
 
-  return Response.json({ results: results });
+  return Response.json({ results: results, checkedAt: now });
 }

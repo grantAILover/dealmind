@@ -9,6 +9,7 @@ export default function Home() {
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [checkedAt, setCheckedAt] = useState("");
 
   async function handleSearch() {
     setLoading(true);
@@ -23,9 +24,11 @@ export default function Home() {
     }
       const data = await response.json();
       setResults(data.results);
+      setCheckedAt(data.checkedAt);
     } catch (err) {
       setError("Something went wrong. Please try again.");
       setResults([]);
+      setCheckedAt("");
     }
     finally {
       setLoading(false);
@@ -37,6 +40,14 @@ export default function Home() {
     e.preventDefault();
     handleSearch();
   }
+
+  function timeAgo(timestamp) {
+  const minutes = Math.floor((Date.now() - new Date(timestamp).getTime()) / 60000);
+  if (minutes < 1) return "just now";
+  if (minutes < 60) return `${minutes} min ago`;
+  const hours = Math.floor(minutes / 60);
+  return `${hours}h ago`;
+}
 
   return (
     <div className="min-h-screen bg-gray-100 p-8">
@@ -55,6 +66,7 @@ export default function Home() {
         </form>
         {loading && <p className="text-gray-500">Loading...</p>}
         {error && <p className="text-red-600">{error}</p>}
+        {checkedAt && <p className="text-gray-500 text-sm mb-2">Checked {timeAgo(checkedAt)}</p>}
         <div className="grid grid-cols-3 gap-4 mt-8">
           {results.map(product => (
   <ProductCard key={product.id} name={product.name} price={product.price} dealScore={product.dealScore} store={product.store} />
