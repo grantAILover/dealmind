@@ -18,8 +18,8 @@ export async function POST(request) {
   const message = await client.messages.create({
     model: 'claude-sonnet-4-6',
     max_tokens: 2000,
-    // Naujas dalykas: duodame Claude web search įrankį.
-    // max_uses riboja, kiek kartų jis gali ieškoti (kad nekainuotų per daug).
+    // Web search įrankis. max_uses riboja, kiek kartų jis gali ieškoti
+    // (kad nekainuotų per daug).
     tools: [
       { type: 'web_search_20260209', name: 'web_search', max_uses: 2 }
     ],
@@ -51,6 +51,13 @@ Respond with ONLY the JSON array, no other text.`
   // Todėl ištraukiame tik dalį nuo pirmo "[" iki paskutinio "]" — patį masyvą.
   const start = fullText.indexOf('[');
   const end = fullText.lastIndexOf(']');
+
+  // Apsauga: jei modelis negrąžino JSON masyvo (nerado kainų ar pan.),
+  // nenulūžtame — grąžiname klaidą, kurią naršyklė parodys raudonai.
+  if (start === -1 || end === -1) {
+    return Response.json({ error: "No results found" }, { status: 500 });
+  }
+
   const results = JSON.parse(fullText.slice(start, end + 1));
 
   cache.set(key, results);
