@@ -2,7 +2,7 @@
 
 // Kortelė nebeturi savo `saved` state — tą valdo tėvas (page.js).
 // Ji tik gauna `isSaved` (ar išsaugotas) ir `onToggleSave` (ką daryti paspaudus).
-export default function ProductCard({ name, price, dealScore, store, url, isSaved, onToggleSave }) {
+export default function ProductCard({ name, price, dealScore, store, url, image, isSaved, onToggleSave }) {
   const text = isSaved ? "SAVED" : "SAVE";
 
   let scoreColor;
@@ -16,6 +16,15 @@ export default function ProductCard({ name, price, dealScore, store, url, isSave
 
   return (
     <div className="bg-white border border-gray-200 rounded-lg shadow-md p-4">
+      {/* Nuotrauka. Jei sulūžusi (onError), paslepiam ją, kad kortelė liktų tvarkinga. */}
+      {image && (
+        <img
+          src={image}
+          alt={name}
+          className="w-full h-40 object-contain mb-2"
+          onError={(e) => { e.currentTarget.style.display = 'none'; }}
+        />
+      )}
       <a href={url} target="_blank" rel="sponsored noopener noreferrer">
         <p className="font-bold text-lg text-blue-700 hover:underline">{name}</p>
       </a>

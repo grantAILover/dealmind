@@ -82,6 +82,7 @@ Each object must have:
 - price (number, the real current price in EUR)
 - store (string, the name of the store where you found it)
 - url (string, the direct link to the product page in that store)
+- image (string, a direct URL to a photo of the product, ideally ending in .jpg/.png/.webp)
 - dealScore (number 0-100: how good this price is relative to the product's typical price and its category)
 Respond with ONLY the JSON array, no other text.`
       }

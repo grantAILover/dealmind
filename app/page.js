@@ -102,6 +102,7 @@ export default function Home() {
             dealScore={product.dealScore}
             store={product.store}
             url={product.url}
+            image={product.image}
             isSaved={isSaved(product)}
             onToggleSave={() => toggleSave(product)}
           />
