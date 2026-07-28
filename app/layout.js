@@ -22,7 +22,13 @@ export default function RootLayout({ children }) {
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        {children}
+        <footer className="text-center text-xs text-gray-500 p-4">
+          Bapkes may earn a commission when you buy through links on this site.
+          Prices and availability are indicative and may change.
+        </footer>
+      </body>
     </html>
   );
 }
