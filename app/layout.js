@@ -1,4 +1,5 @@
 import { Geist, Geist_Mono } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -28,6 +29,7 @@ export default function RootLayout({ children }) {
           Bapkes may earn a commission when you buy through links on this site.
           Prices and availability are indicative and may change.
         </footer>
+        <Analytics />
       </body>
     </html>
   );
