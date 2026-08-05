@@ -28,7 +28,11 @@
       "Bash(node --use-system-ca test-supabase.mjs)",
       "Bash(time curl -s -m 60 -X POST http://localhost:3000/api/search -H \"Content-Type: application/json\" -d '{\"query\":\"beats studio buds\"}')",
       "Bash(time curl -s -m 90 -X POST https://dealmind-ten.vercel.app/api/search -H \"Content-Type: application/json\" -d '{\"query\":\"beats studio buds\"}')",
-      "Bash(curl -s -m 90 -w \"\\\\n=== HTTP status: %{http_code} ===\\\\n\" -X POST https://dealmind-ten.vercel.app/api/search -H \"Content-Type: application/json\" -d '{\"query\":\"beats studio buds\"}')"
+      "Bash(curl -s -m 90 -w \"\\\\n=== HTTP status: %{http_code} ===\\\\n\" -X POST https://dealmind-ten.vercel.app/api/search -H \"Content-Type: application/json\" -d '{\"query\":\"beats studio buds\"}')",
+      "Bash(node --use-system-ca test-embed.mjs)",
+      "Bash(time curl -s -m 90 -X POST http://localhost:3000/api/search -H \"Content-Type: application/json\" -d '{\"query\":\"dyson v11 cordless vacuum\"}')",
+      "Bash(time curl -s -m 60 -X POST http://localhost:3000/api/search -H \"Content-Type: application/json\" -d '{\"query\":\"dyson v11\"}')",
+      "Bash(time curl -s -m 60 -X POST http://localhost:3000/api/search -H \"Content-Type: application/json\" -d '{\"query\":\"dyson v11 cleaner\"}')"
     ]
   }
 }

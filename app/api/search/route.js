@@ -2,39 +2,49 @@ import Anthropic from '@anthropic-ai/sdk';
 import { createClient } from '@supabase/supabase-js';
 
 const client = new Anthropic();
-// Supabase klientas jungiasi prie tavo duomenų bazės (URL + slaptas raktas iš .env.local).
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 
-// Web search užtrunka ilgai — prašome Vercel duoti funkcijai iki 60s.
 export const maxDuration = 60;
 
-// Parduotuvės, su kuriomis turi affiliate sutartį.
-// `match` = raktažodis parduotuvės pavadinime; `tag` = tavo affiliate ID.
-// PLACEHOLDER — pakeisk `bapkes-21` į tikrą Amazon tag'ą, kai patvirtins.
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+// Ar cache įrašas dar šviežias (jaunesnis nei 24h)?
+function isFresh(created_at) {
+  return Date.now() - new Date(created_at).getTime() < DAY_MS;
+}
+
+// Paverčia tekstą į embedding vektorių (1024 skaičiai) per Voyage AI.
+async function getEmbedding(text) {
+  const res = await fetch('https://api.voyageai.com/v1/embeddings', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${process.env.VOYAGE_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ input: text, model: 'voyage-3.5-lite' }),
+  });
+  const data = await res.json();
+  return data.data[0].embedding; // masyvas iš 1024 skaičių
+}
+
+// Parduotuvės, su kuriomis turi affiliate sutartį (PLACEHOLDER tag'as).
 const AFFILIATE_STORES = [
   { match: 'amazon', tag: 'bapkes-21' },
 ];
 
-// Prideda tavo affiliate tag'ą prie produkto URL (jei tai affiliate parduotuvė).
-// Grąžina produktą su pakeistu `url` ir nauju `isAffiliate` lauku.
 function withAffiliate(product) {
   const storeLower = (product.store || '').toLowerCase();
-  // .find grąžina pirmą tinkantį affiliate arba undefined (Day 2 metodas!).
   const affiliate = AFFILIATE_STORES.find(a => storeLower.includes(a.match));
   const isAffiliate = Boolean(affiliate);
 
   let url = product.url || null;
   if (url && affiliate) {
-    // Jei URL jau turi "?", jungiam su "&"; kitaip su "?".
     const separator = url.includes('?') ? '&' : '?';
     url = `${url}${separator}tag=${affiliate.tag}`;
   }
-
-  // ...product = nukopijuojam visus laukus (Day 3 spread!), pakeičiam url, pridedam isAffiliate.
   return { ...product, url, isAffiliate };
 }
 
-// Prideda affiliate nuorodas IR surūšiuoja: affiliate parduotuvės — pirmos.
 function processResults(results) {
   return results
     .map(withAffiliate)
@@ -45,25 +55,31 @@ export async function POST(request) {
   const body = await request.json();
   const key = body.query.toLowerCase().trim();
 
-  const DAY_MS = 24 * 60 * 60 * 1000;
-
-  // 1. Cache patikra (su created_at TTL patikrai).
-  const { data: cached } = await supabase
+  // 1. TIKSLUS cache (nemokamas — be embedding). Jei toks pat tekstas ir šviežias → grąžinam.
+  const { data: exact } = await supabase
     .from('search_cache')
     .select('results, created_at')
     .eq('query', key)
     .maybeSingle();
 
-  if (cached) {
-    const ageMs = Date.now() - new Date(cached.created_at).getTime();
-    if (ageMs < DAY_MS) {
-      // Šviežias cache — apdorojam (affiliate + rūšiavimas) ir grąžinam.
-      return Response.json({ results: processResults(cached.results), checkedAt: cached.created_at });
-    }
-    // Senesnis nei 24h — ieškom iš naujo žemiau.
+  if (exact && isFresh(exact.created_at)) {
+    return Response.json({ results: processResults(exact.results), checkedAt: exact.created_at });
   }
 
-  // 2. Šviežia paieška.
+  // 2. Nėra tikslaus atitikmens — skaičiuojam embedding ir ieškom PANAŠIOS paieškos pagal PRASMĘ.
+  //    Taip "dyson v11" randa jau esantį "dyson v11 vacuum" (nes prasmė panaši).
+  const embedding = await getEmbedding(key);
+  const { data: matches } = await supabase.rpc('match_search', {
+    query_embedding: embedding,
+    match_threshold: 0.78, // kiek panašu = "tas pats". Vidurys: pagauna aiškius perfrazavimus,
+                           // atmeta kitus modelius. Kelk aukščiau (saugiau) / žemiau (agresyviau).
+  });
+
+  if (matches && matches.length > 0 && isFresh(matches[0].created_at)) {
+    return Response.json({ results: processResults(matches[0].results), checkedAt: matches[0].created_at });
+  }
+
+  // 3. Nieko panašaus cache'e — tikra web paieška.
   const message = await client.messages.create({
     model: 'claude-sonnet-4-6',
     max_tokens: 2000,
@@ -89,13 +105,11 @@ Respond with ONLY the JSON array, no other text.`
     ]
   });
 
-  // Web search grąžina masyvą blokų — išrenkam teksto dalis ir sujungiam.
   const fullText = message.content
     .filter(block => block.type === 'text')
     .map(block => block.text)
     .join('');
 
-  // Ištraukiam JSON masyvą nuo pirmo "[" iki paskutinio "]".
   const start = fullText.indexOf('[');
   const end = fullText.lastIndexOf(']');
   if (start === -1 || end === -1) {
@@ -103,10 +117,14 @@ Respond with ONLY the JSON array, no other text.`
   }
   const results = JSON.parse(fullText.slice(start, end + 1));
 
+  // 4. Saugom rezultatus SU embedding (kad ateity semantinė paieška rastų šitą įrašą).
   const now = new Date().toISOString();
-  // Cache saugom RAW rezultatus (be affiliate nuorodų) — nuorodas generuojam kaskart iš naujo,
-  // kad pakeitęs affiliate ID nereikėtų valyti visos bazės.
-  await supabase.from('search_cache').upsert({ query: key, results: results, created_at: now });
+  await supabase.from('search_cache').upsert({
+    query: key,
+    results: results,
+    embedding: embedding,
+    created_at: now,
+  });
 
   return Response.json({ results: processResults(results), checkedAt: now });
 }
