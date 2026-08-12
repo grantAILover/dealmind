@@ -60,12 +60,11 @@ const AFFILIATE_STORES = [
 function storeSearchUrl(product) {
   const q = encodeURIComponent(product.name || '');
   const store = (product.store || '').toLowerCase();
+  // Tik patikrintai veikiantys formatai. Kiti → Google paieška (visada veikia).
   if (store.includes('amazon')) return `https://www.amazon.de/s?k=${q}`;
   if (store.includes('ebay')) return `https://www.ebay.de/sch/i.html?_nkw=${q}`;
   if (store.includes('autodoc')) return `https://www.autodoc.de/search?keyword=${q}`;
-  if (store.includes('kfzteile')) return `https://www.kfzteile24.de/search?q=${q}`;
-  if (store.includes('oscaro')) return `https://www.oscaro.com/recherche?q=${q}`;
-  // Nežinoma parduotuvė → Google paieška (visada veikia, veda į relevantiškus rezultatus).
+  // Nežinoma / nepatikrinta parduotuvė → Google paieška (veda į relevantiškus rezultatus).
   return `https://www.google.com/search?q=${q}`;
 }
 

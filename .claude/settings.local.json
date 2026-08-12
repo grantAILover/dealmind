@@ -45,7 +45,8 @@
       "Bash(time curl -s -m 150 -X POST http://localhost:3000/api/search -H \"Content-Type: application/json\" -d '{\"car\":\"VW Golf 7 1.6 TDI 2015\",\"part\":\"front brake discs\",\"condition\":\"Any\"}')",
       "Bash(time curl -s -m 30 -X POST http://localhost:3000/api/search -H \"Content-Type: application/json\" -d '{\"car\":\"VW Golf 7 1.6 TDI 2015\",\"part\":\"front brake discs\",\"condition\":\"Any\"}')",
       "Bash(curl -s -m 30 -X POST http://localhost:3000/api/search -H \"Content-Type: application/json\" -d '{\"car\":\"VW Golf 7 1.6 TDI 2015\",\"part\":\"front brake discs\",\"condition\":\"Any\"}')",
-      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); [print\\(p['store'],'->',p['url']\\) for p in d['results']]\")"
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); [print\\(p['store'],'->',p['url']\\) for p in d['results']]\")",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); [print\\(p['store'],'->',p['url'][:55]\\) for p in d['results']]\")"
     ]
   }
 }
