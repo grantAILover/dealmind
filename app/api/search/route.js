@@ -53,7 +53,9 @@ function processResults(results) {
 
 export async function POST(request) {
   const body = await request.json();
-  const key = body.query.toLowerCase().trim();
+  const { car, part, condition } = body;
+  // Cache raktas iš visų trijų laukų (būklė svarbi — OEM ir used duoda skirtingus rezultatus).
+  const key = `${car} | ${part} | ${condition}`.toLowerCase().trim();
 
   // 1. TIKSLUS cache (nemokamas — be embedding). Jei toks pat tekstas ir šviežias → grąžinam.
   const { data: exact } = await supabase
@@ -89,17 +91,23 @@ export async function POST(request) {
     messages: [
       {
         role: 'user',
-        content: `Search the web for real, currently available products matching: "${body.query}".
-Find 3 real products sold by online stores that ship to Europe, with their REAL current prices.
-Prefer Amazon.de when it has a competitive price, but always include the genuinely best deals you find.
+        content: `Find a real, currently available CAR PART for this vehicle.
+Car: "${car}"
+Part needed: "${part}"
+Condition preference: "${condition}" (if "Any", include a mix; otherwise prefer that condition).
+
+Search the web (European car-parts stores like Autodoc, kfzteile24, eBay Motors, Amazon.de, oscaro) for 3 real listings that FIT this specific car, with REAL current prices in EUR.
+Only include parts that genuinely fit the given car — fitment accuracy is critical.
 Each object must have:
 - id (number)
-- name (string, the real product name)
+- name (string, the real part name incl. brand)
 - price (number, the real current price in EUR)
-- store (string, the name of the store where you found it)
-- url (string, the direct link to the product page in that store)
-- image (string, a direct URL to a photo of the product, ideally ending in .jpg/.png/.webp)
-- dealScore (number 0-100: how good this price is relative to the product's typical price and its category)
+- store (string, the store where you found it)
+- url (string, direct link to the part's page)
+- image (string, direct URL to a photo of the part, ideally .jpg/.png/.webp)
+- condition (string: "OEM", "Aftermarket", or "Used")
+- fits (string, short note on fitment, e.g. "Fits BMW E46 320i 2000-2005")
+- dealScore (number 0-100: how good this price is vs the part's typical price)
 Respond with ONLY the JSON array, no other text.`
       }
     ]
