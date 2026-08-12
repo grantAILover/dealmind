@@ -54,13 +54,29 @@ const AFFILIATE_STORES = [
   { match: 'amazon', tag: 'bapkes-21' },
 ];
 
+// Sukuria PAIEŠKOS nuorodą parduotuvėje pagal dalies pavadinimą.
+// Claude URL nepatikimi (išgalvoti → pradinis puslapis ar ne ta prekė),
+// tad vedam vartotoją į parduotuvės paiešką su ta dalimi — visada relevantiška.
+function storeSearchUrl(product) {
+  const q = encodeURIComponent(product.name || '');
+  const store = (product.store || '').toLowerCase();
+  if (store.includes('amazon')) return `https://www.amazon.de/s?k=${q}`;
+  if (store.includes('ebay')) return `https://www.ebay.de/sch/i.html?_nkw=${q}`;
+  if (store.includes('autodoc')) return `https://www.autodoc.de/search?keyword=${q}`;
+  if (store.includes('kfzteile')) return `https://www.kfzteile24.de/search?q=${q}`;
+  if (store.includes('oscaro')) return `https://www.oscaro.com/recherche?q=${q}`;
+  // Nežinoma parduotuvė → Google paieška (visada veikia, veda į relevantiškus rezultatus).
+  return `https://www.google.com/search?q=${q}`;
+}
+
 function withAffiliate(product) {
   const storeLower = (product.store || '').toLowerCase();
   const affiliate = AFFILIATE_STORES.find(a => storeLower.includes(a.match));
   const isAffiliate = Boolean(affiliate);
 
-  let url = product.url || null;
-  if (url && affiliate) {
+  // Naudojam paieškos URL vietoj (nepatikimo) Claude produkto URL.
+  let url = storeSearchUrl(product);
+  if (affiliate) {
     const separator = url.includes('?') ? '&' : '?';
     url = `${url}${separator}tag=${affiliate.tag}`;
   }
