@@ -39,7 +39,9 @@
       "Bash(curl -s -m 30 -X POST http://localhost:3000/api/search -H \"Content-Type: application/json\" -d '{\"car\":\"BMW E46 320i 2003\",\"part\":\"front brake pads\",\"condition\":\"Any\"}')",
       "Bash(node --use-system-ca test-check.mjs)",
       "Bash(nslookup zqoieleloyzekbkugvud.supabase.co)",
-      "Bash(nslookup google.com)"
+      "Bash(nslookup google.com)",
+      "Bash(time curl -s -m 100 -X POST http://localhost:3000/api/search -H \"Content-Type: application/json\" -d '{\"car\":\"Audi A4 B8 2.0 TDI 2010\",\"part\":\"oil filter\",\"condition\":\"OEM\"}')",
+      "Bash(time curl -s -m 130 -X POST http://localhost:3000/api/search -H \"Content-Type: application/json\" -d '{\"car\":\"Audi A4 B8 2.0 TDI 2010\",\"part\":\"oil filter\",\"condition\":\"OEM\"}')"
     ]
   }
 }

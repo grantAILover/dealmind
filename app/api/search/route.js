@@ -13,6 +13,28 @@ function isFresh(created_at) {
   return Date.now() - new Date(created_at).getTime() < DAY_MS;
 }
 
+// Ištraukia JSON masyvą iš teksto PATIKIMAI: nuo pirmo "[" skaičiuoja skliaustų
+// gylį (praleisdamas tekstą kabutėse) ir randa, kur masyvas realiai baigiasi.
+// Taip ignoruojam Claude paaiškinimus ir citatas kaip [1], [2] po masyvo.
+function extractJsonArray(text) {
+  const start = text.indexOf('[');
+  if (start === -1) return null;
+  let depth = 0, inString = false, escape = false;
+  for (let i = start; i < text.length; i++) {
+    const c = text[i];
+    if (escape) { escape = false; continue; }
+    if (c === '\\') { escape = true; continue; }
+    if (c === '"') { inString = !inString; continue; }
+    if (inString) continue;
+    if (c === '[') depth++;
+    else if (c === ']') {
+      depth--;
+      if (depth === 0) return text.slice(start, i + 1); // masyvas baigėsi čia
+    }
+  }
+  return null;
+}
+
 // Paverčia tekstą į embedding vektorių (1024 skaičiai) per Voyage AI.
 async function getEmbedding(text) {
   const res = await fetch('https://api.voyageai.com/v1/embeddings', {
@@ -118,12 +140,11 @@ Respond with ONLY the JSON array, no other text.`
     .map(block => block.text)
     .join('');
 
-  const start = fullText.indexOf('[');
-  const end = fullText.lastIndexOf(']');
-  if (start === -1 || end === -1) {
+  const jsonText = extractJsonArray(fullText);
+  if (!jsonText) {
     return Response.json({ error: "No results found" }, { status: 500 });
   }
-  const results = JSON.parse(fullText.slice(start, end + 1));
+  const results = JSON.parse(jsonText);
 
   // 4. Saugom rezultatus SU embedding (kad ateity semantinė paieška rastų šitą įrašą).
   const now = new Date().toISOString();
