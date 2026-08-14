@@ -35,29 +35,41 @@ export default function Home() {
     localStorage.setItem('watchlist', JSON.stringify(updated));
   }
 
+  // Viena paieška — meta klaidą, jei nepavyko (kad retry ją pagautų).
+  async function searchOnce() {
+    const response = await fetch('/api/search', {
+      method: 'POST',
+      body: JSON.stringify({ car: car, part: part, condition: condition })
+    });
+    if (!response.ok) {
+      throw new Error("Server error");
+    }
+    return await response.json();
+  }
+
   async function handleSearch() {
     setLoading(true);
     setError("");
-    try {
-      const response = await fetch('/api/search', {
-        method: 'POST',
-        // Siunčiam tris laukus vietoj vieno query.
-        body: JSON.stringify({ car: car, part: part, condition: condition })
-      });
-      if (!response.ok) {
-        throw new Error("Server error");
+    setResults([]);
+    setCheckedAt("");
+
+    // Bandom iki 2 kartų — jei pirmа paieška timeout'ina (Vercel 60s), antra dažnai spėja.
+    const attempts = 2;
+    for (let i = 0; i < attempts; i++) {
+      try {
+        const data = await searchOnce();
+        setResults(data.results);
+        setCheckedAt(data.checkedAt);
+        setLoading(false);
+        return; // pavyko — baigiam
+      } catch (err) {
+        // Jei tai paskutinis bandymas — rodom klaidą. Kitaip tyliai bandom vėl.
+        if (i === attempts - 1) {
+          setError("Search took too long. Please try again — new parts can take a minute to find.");
+        }
       }
-      const data = await response.json();
-      setResults(data.results);
-      setCheckedAt(data.checkedAt);
-    } catch (err) {
-      setError("Something went wrong. Please try again.");
-      setResults([]);
-      setCheckedAt("");
     }
-    finally {
-      setLoading(false);
-    }
+    setLoading(false);
   }
 
   function handleSubmit(e) {
@@ -109,7 +121,11 @@ export default function Home() {
         </button>
       </form>
 
-      {loading && <p className="text-gray-500 mt-3">Loading...</p>}
+      {loading && (
+        <p className="text-blue-600 mt-3 animate-pulse">
+          🔧 Searching real stores for your part — this can take up to a minute...
+        </p>
+      )}
       {error && <p className="text-red-600 mt-3">{error}</p>}
       {checkedAt && <p className="text-gray-500 text-sm mt-3">Checked {timeAgo(checkedAt)}</p>}
 
