@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from 'react';
 import ProductCard from '@/components/ProductCard';
+import CarSelector from '@/components/CarSelector';
 
 export default function Home() {
   // Vietoj vieno "query" dabar TRYS laukai: automobilis, dalis, būklė.
@@ -90,14 +91,11 @@ export default function Home() {
       <h1 className="text-4xl font-bold text-blue-600">Bapkes</h1>
       <p className="text-gray-500 mb-6">Find the right car part with AI</p>
 
-      <form onSubmit={handleSubmit} className="flex flex-wrap gap-2 items-center">
-        <input
-          className="border border-gray-300 rounded-lg px-4 py-2 w-72 bg-white text-gray-900"
-          type="text"
-          value={car}
-          onChange={(e) => setCar(e.target.value)}
-          placeholder="Your car (e.g. BMW E46 320i 2003)"
-        />
+      <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+        {/* Automobilio pasirinkimas su autocomplete — praneša pilną automobilį per setCar. */}
+        <CarSelector onChange={setCar} />
+
+        <div className="flex flex-wrap gap-2 items-center">
         <input
           className="border border-gray-300 rounded-lg px-4 py-2 w-64 bg-white text-gray-900"
           type="text"
@@ -119,6 +117,7 @@ export default function Home() {
         <button className="bg-blue-600 text-white px-6 py-2 rounded-lg disabled:opacity-50" type="submit" disabled={loading}>
           Search
         </button>
+        </div>
       </form>
 
       {loading && (
