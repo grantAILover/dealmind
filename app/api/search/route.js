@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { createClient } from '@supabase/supabase-js';
+import { after } from 'next/server'; // suplanuoja darbą PO atsakymo išsiuntimo (fono paieška)
 
 const client = new Anthropic();
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
@@ -115,49 +116,20 @@ function processResults(results, regionCfg) {
     .sort((a, b) => (b.isAffiliate ? 1 : 0) - (a.isAffiliate ? 1 : 0));
 }
 
-export async function POST(request) {
-  const body = await request.json();
-  const { car, part, condition, region } = body;
-  const regionCfg = REGIONS[region] || REGIONS.Europe; // nežinomas/tuščias → Visa Europa
-  // Cache raktas iš VISŲ laukų. Regionas SVARBUS: LT ir DE turi skirtingas parduotuves
-  // ir kainas, tad to paties įrašo negalim grąžinti abiem (kitaip lietuvis gautų vokiškus).
-  const key = `${car} | ${part} | ${condition} | ${region}`.toLowerCase().trim();
-
-  // 1. TIKSLUS cache (nemokamas — be embedding). Jei toks pat tekstas ir šviežias → grąžinam.
-  const { data: exact } = await supabase
-    .from('search_cache')
-    .select('results, created_at')
-    .eq('query', key)
-    .maybeSingle();
-
-  if (exact && isFresh(exact.created_at)) {
-    return Response.json({ results: processResults(exact.results, regionCfg), checkedAt: exact.created_at });
-  }
-
-  // 2. Nėra tikslaus atitikmens — skaičiuojam embedding ir ieškom PANAŠIOS paieškos pagal PRASMĘ.
-  //    Taip "dyson v11" randa jau esantį "dyson v11 vacuum" (nes prasmė panaši).
-  const embedding = await getEmbedding(key);
-  const { data: matches } = await supabase.rpc('match_search', {
-    query_embedding: embedding,
-    match_threshold: 0.78, // kiek panašu = "tas pats". Vidurys: pagauna aiškius perfrazavimus,
-                           // atmeta kitus modelius. Kelk aukščiau (saugiau) / žemiau (agresyviau).
-  });
-
-  if (matches && matches.length > 0 && isFresh(matches[0].created_at)) {
-    return Response.json({ results: processResults(matches[0].results, regionCfg), checkedAt: matches[0].created_at });
-  }
-
-  // 3. Nieko panašaus cache'e — tikra web paieška.
-  const message = await client.messages.create({
-    model: 'claude-sonnet-4-6',
-    max_tokens: 2000,
-    tools: [
-      { type: 'web_search_20260209', name: 'web_search', max_uses: 1 }
-    ],
-    messages: [
-      {
-        role: 'user',
-        content: `Find a real, currently available CAR PART for this vehicle.
+// ── LĖTAS DARBAS (vyksta FONE per after(), po to kai POST jau grąžino jobId) ──
+// Padaro tikrą Claude web paiešką ir įrašo rezultatus į job eilutę (+ į cache).
+async function runSearch(jobId, key, embedding, car, part, condition, regionCfg) {
+  try {
+    const message = await client.messages.create({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 2000,
+      tools: [
+        { type: 'web_search_20260209', name: 'web_search', max_uses: 1 }
+      ],
+      messages: [
+        {
+          role: 'user',
+          content: `Find a real, currently available CAR PART for this vehicle.
 Car: "${car}"
 Part needed: "${part}"
 Condition preference: "${condition}" (if "Any", include a mix; otherwise prefer that condition).
@@ -177,29 +149,114 @@ Each object must have:
 - fits (string, short note on fitment, e.g. "Fits BMW E46 320i 2000-2005")
 - dealScore (number 0-100: how good this price is vs the part's typical price)
 Respond with ONLY the JSON array, no other text.`
-      }
-    ]
-  });
+        }
+      ]
+    });
 
-  const fullText = message.content
-    .filter(block => block.type === 'text')
-    .map(block => block.text)
-    .join('');
+    const fullText = message.content
+      .filter(block => block.type === 'text')
+      .map(block => block.text)
+      .join('');
 
-  const jsonText = extractJsonArray(fullText);
-  if (!jsonText) {
-    return Response.json({ error: "No results found" }, { status: 500 });
+    const jsonText = extractJsonArray(fullText);
+    if (!jsonText) {
+      await supabase.from('search_jobs').update({ status: 'error' }).eq('id', jobId);
+      return;
+    }
+    const results = JSON.parse(jsonText);
+    const now = new Date().toISOString();
+
+    // Saugom RAW rezultatus cache'e su embedding (kad ateity semantinė paieška juos rastų;
+    // raw = be affiliate tag'o, kad tag'o keitimas galiotų iškart visiems).
+    await supabase.from('search_cache').upsert({
+      query: key,
+      results: results,
+      embedding: embedding,
+      created_at: now,
+    });
+
+    // Job eilutėje saugom jau APDOROTUS rezultatus (su regiono URL + affiliate),
+    // kad GET/status galėtų juos grąžinti tiesiai (jis regiono nežino, tik jobId).
+    await supabase.from('search_jobs')
+      .update({ status: 'done', results: processResults(results, regionCfg) })
+      .eq('id', jobId);
+  } catch (err) {
+    // Klaida (pvz. Claude nepavyko) → pažymim job kaip "error", kad naršyklė nustotų klausinėti.
+    await supabase.from('search_jobs').update({ status: 'error' }).eq('id', jobId);
   }
-  const results = JSON.parse(jsonText);
+}
 
-  // 4. Saugom rezultatus SU embedding (kad ateity semantinė paieška rastų šitą įrašą).
-  const now = new Date().toISOString();
-  await supabase.from('search_cache').upsert({
-    query: key,
-    results: results,
-    embedding: embedding,
-    created_at: now,
+// ── START: naršyklė kviečia čia. Grąžina GREITAI (cache arba jobId), nelaukia paieškos. ──
+export async function POST(request) {
+  const body = await request.json();
+  const { car, part, condition, region } = body;
+  const regionCfg = REGIONS[region] || REGIONS.Europe; // nežinomas/tuščias → Visa Europa
+  // Cache raktas iš VISŲ laukų. Regionas SVARBUS: LT ir DE turi skirtingas parduotuves
+  // ir kainas, tad to paties įrašo negalim grąžinti abiem (kitaip lietuvis gautų vokiškus).
+  const key = `${car} | ${part} | ${condition} | ${region}`.toLowerCase().trim();
+
+  // 1. TIKSLUS cache (nemokamas — be embedding). Jei toks pat tekstas ir šviežias → grąžinam IŠKART.
+  const { data: exact } = await supabase
+    .from('search_cache')
+    .select('results, created_at')
+    .eq('query', key)
+    .maybeSingle();
+
+  if (exact && isFresh(exact.created_at)) {
+    return Response.json({ status: 'done', results: processResults(exact.results, regionCfg), checkedAt: exact.created_at });
+  }
+
+  // 2. Nėra tikslaus atitikmens — skaičiuojam embedding ir ieškom PANAŠIOS paieškos pagal PRASMĘ.
+  //    Taip "dyson v11" randa jau esantį "dyson v11 vacuum" (nes prasmė panaši).
+  const embedding = await getEmbedding(key);
+  const { data: matches } = await supabase.rpc('match_search', {
+    query_embedding: embedding,
+    match_threshold: 0.78, // kiek panašu = "tas pats". Vidurys: pagauna aiškius perfrazavimus,
+                           // atmeta kitus modelius. Kelk aukščiau (saugiau) / žemiau (agresyviau).
   });
 
-  return Response.json({ results: processResults(results, regionCfg), checkedAt: now });
+  if (matches && matches.length > 0 && isFresh(matches[0].created_at)) {
+    return Response.json({ status: 'done', results: processResults(matches[0].results, regionCfg), checkedAt: matches[0].created_at });
+  }
+
+  // 3. Nieko cache'e — sukuriam "job" eilutę (skambutuką) ir paleidžiam paiešką FONE.
+  const { data: job, error: jobErr } = await supabase
+    .from('search_jobs')
+    .insert({ status: 'pending' })
+    .select('id')
+    .single();
+
+  if (jobErr || !job) {
+    return Response.json({ error: 'Could not start search' }, { status: 500 });
+  }
+
+  // after() paleidžia runSearch TIK PO to, kai grąžinsim atsakymą žemiau — naršyklė nebelaukia
+  // 90s (jokio timeout'o kliento pusėje). Fono darbas turi iki maxDuration (60s).
+  after(() => runSearch(job.id, key, embedding, car, part, condition, regionCfg));
+
+  return Response.json({ status: 'pending', jobId: job.id });
+}
+
+// ── STATUS: naršyklė klausia kas 3s "ar jobId paruošta?". Grąžina pending / done / error. ──
+export async function GET(request) {
+  const { searchParams } = new URL(request.url);
+  const jobId = searchParams.get('jobId');
+  if (!jobId) {
+    return Response.json({ error: 'Missing jobId' }, { status: 400 });
+  }
+
+  const { data: job } = await supabase
+    .from('search_jobs')
+    .select('status, results, created_at')
+    .eq('id', jobId)
+    .maybeSingle();
+
+  if (!job) {
+    return Response.json({ error: 'Job not found' }, { status: 404 });
+  }
+  if (job.status === 'done') {
+    return Response.json({ status: 'done', results: job.results, checkedAt: job.created_at });
+  }
+  // "pending" arba "error" — naršyklė pagal tai arba klausia toliau, arba nustoja.
+  return Response.json({ status: job.status });
 }

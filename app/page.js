@@ -44,16 +44,29 @@ export default function Home() {
     localStorage.setItem('watchlist', JSON.stringify(updated));
   }
 
-  // Viena paieška — meta klaidą, jei nepavyko (kad retry ją pagautų).
-  async function searchOnce() {
-    const response = await fetch('/api/search', {
-      method: 'POST',
-      body: JSON.stringify({ car: car, part: part, condition: condition, region: region })
-    });
-    if (!response.ok) {
-      throw new Error("Server error");
+  // Mažas pagalbininkas — palaukti nurodytą ms (naudojam tarp polling'o klausimų).
+  function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  // POLLING: kas 3s klausiam serverio "ar jobId jau paruošta?", kol done/error/timeout.
+  async function pollJob(jobId) {
+    const maxTries = 30; // 30 × 3s = iki 90s laukiam
+    for (let i = 0; i < maxTries; i++) {
+      await sleep(3000);
+      const response = await fetch(`/api/search?jobId=${jobId}`); // GET = status
+      const data = await response.json();
+      if (data.status === "done") {
+        setResults(data.results);
+        setCheckedAt(data.checkedAt);
+        return; // radom — baigiam
+      }
+      if (data.status === "error") {
+        throw new Error("Search failed");
+      }
+      // "pending" → nieko nedarom, klausiam vėl po 3s
     }
-    return await response.json();
+    throw new Error("Timed out"); // per ilgai — meta klaidą (pagauna handleSearch)
   }
 
   async function handleSearch() {
@@ -62,23 +75,32 @@ export default function Home() {
     setResults([]);
     setCheckedAt("");
 
-    // Bandom iki 2 kartų — jei pirmа paieška timeout'ina (Vercel 60s), antra dažnai spėja.
-    const attempts = 2;
-    for (let i = 0; i < attempts; i++) {
-      try {
-        const data = await searchOnce();
+    try {
+      // 1. START — grąžina GREITAI: arba iškart rezultatus (cache), arba jobId (reikia laukti).
+      const response = await fetch('/api/search', {
+        method: 'POST',
+        body: JSON.stringify({ car: car, part: part, condition: condition, region: region })
+      });
+      if (!response.ok) {
+        throw new Error("Server error");
+      }
+      const data = await response.json();
+
+      if (data.status === "done") {
+        // Cache hit — rezultatai jau čia, laukti nereikia.
         setResults(data.results);
         setCheckedAt(data.checkedAt);
-        setLoading(false);
-        return; // pavyko — baigiam
-      } catch (err) {
-        // Jei tai paskutinis bandymas — rodom klaidą. Kitaip tyliai bandom vėl.
-        if (i === attempts - 1) {
-          setError("Search took too long. Please try again — new parts can take a minute to find.");
-        }
+      } else if (data.status === "pending") {
+        // Nauja paieška — pradedam klausinėti, kol fono darbas baigs.
+        await pollJob(data.jobId);
+      } else {
+        throw new Error("Unexpected response");
       }
+    } catch (err) {
+      setError("Search took too long or failed. Please try again — new parts can take a minute to find.");
+    } finally {
+      setLoading(false); // ir sėkmės, ir klaidos atveju — išjungiam loading
     }
-    setLoading(false);
   }
 
   function handleSubmit(e) {
