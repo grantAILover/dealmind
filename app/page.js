@@ -147,6 +147,7 @@ export default function Home() {
             image={product.image}
             condition={product.condition}
             fits={product.fits}
+            partNumber={product.partNumber}
             isSaved={isSaved(product)}
             onToggleSave={() => toggleSave(product)}
           />

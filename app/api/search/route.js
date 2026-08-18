@@ -133,7 +133,8 @@ Car: "${car}"
 Part needed: "${part}"
 Condition preference: "${condition}" (if "Any", include a mix; otherwise prefer that condition).
 
-Search the web (European car-parts stores like Autodoc, kfzteile24, eBay Motors, Amazon.de, oscaro) for 3 real listings that FIT this specific car, with REAL current prices in EUR.
+First, based on the exact engine/variant, determine the correct part specification for this car.
+Then search the web (European car-parts stores like Autodoc, kfzteile24, eBay Motors, Amazon.de, oscaro) for 3 real listings that FIT this specific car, with REAL current prices in EUR.
 Only include parts that genuinely fit the given car — fitment accuracy is critical.
 Each object must have:
 - id (number)
@@ -143,6 +144,7 @@ Each object must have:
 - url (string, direct link to the part's page)
 - image (string, direct URL to a photo of the part, ideally .jpg/.png/.webp)
 - condition (string: "OEM", "Aftermarket", or "Used")
+- partNumber (string, the manufacturer/OEM part number EXACTLY as shown on the real listing you found — do NOT guess or invent one; use "" if you do not actually see a part number)
 - fits (string, short note on fitment, e.g. "Fits BMW E46 320i 2000-2005")
 - dealScore (number 0-100: how good this price is vs the part's typical price)
 Respond with ONLY the JSON array, no other text.`

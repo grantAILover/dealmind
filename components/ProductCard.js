@@ -1,6 +1,6 @@
 "use client";
 
-export default function ProductCard({ name, price, dealScore, store, url, image, condition, fits, isSaved, onToggleSave }) {
+export default function ProductCard({ name, price, dealScore, store, url, image, condition, fits, partNumber, isSaved, onToggleSave }) {
   let scoreColor;
   if (dealScore >= 80) {
     scoreColor = "bg-green-500 text-white";
@@ -36,7 +36,13 @@ export default function ProductCard({ name, price, dealScore, store, url, image,
           {condition}
         </span>
       )}
-      {fits && <p className="text-xs text-green-700 mb-2">✓ {fits}</p>}
+      {fits && <p className="text-xs text-green-700 mb-1">✓ {fits}</p>}
+      {partNumber && (
+        <p className="text-xs text-gray-600 mb-2">
+          Part #: <span className="font-mono font-semibold">{partNumber}</span>
+          <span className="text-gray-400"> — verify vs your VIN</span>
+        </p>
+      )}
 
       {/* Juostelės: kaina ir parduotuvė */}
       <div className="space-y-1 mb-3">
