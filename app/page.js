@@ -13,11 +13,19 @@ export default function Home() {
   const [error, setError] = useState("");
   const [checkedAt, setCheckedAt] = useState("");
   const [savedItems, setSavedItems] = useState([]);
+  const [region, setRegion] = useState("Europe");
 
   useEffect(() => {
     const stored = localStorage.getItem('watchlist');
     if (stored) {
       setSavedItems(JSON.parse(stored));
+    }
+  }, []);
+
+   useEffect(() => {
+  const storedRegion = localStorage.getItem('region'); // paskaito įrašą "region"
+  if (storedRegion) {                                   // jei vartotojas jau kada rinkosi
+    setRegion(storedRegion);                            // atstatom jo pasirinkimą
     }
   }, []);
 
@@ -40,7 +48,7 @@ export default function Home() {
   async function searchOnce() {
     const response = await fetch('/api/search', {
       method: 'POST',
-      body: JSON.stringify({ car: car, part: part, condition: condition })
+      body: JSON.stringify({ car: car, part: part, condition: condition, region: region })
     });
     if (!response.ok) {
       throw new Error("Server error");
@@ -114,6 +122,19 @@ export default function Home() {
           <option value="Aftermarket">Aftermarket</option>
           <option value="Used">Used</option>
         </select>
+        {/* Regionas — kaip condition, bet onChange DAR įsimena į localStorage (kad išliktų perkrovus). */}
+        <select
+          className="border border-gray-300 rounded-lg px-4 py-2 bg-white text-gray-900"
+          value={region}
+          onChange={(e) => {
+            setRegion(e.target.value);
+            localStorage.setItem('region', e.target.value);
+          }}
+        >
+          <option value="Europe">🇪🇺 Visa Europa</option>
+          <option value="Lithuania">🇱🇹 Lietuva</option>
+          <option value="Germany">🇩🇪 Vokietija</option>
+        </select>
         <button className="bg-blue-600 text-white px-6 py-2 rounded-lg disabled:opacity-50" type="submit" disabled={loading}>
           Search
         </button>
@@ -132,6 +153,18 @@ export default function Home() {
       {results.length > 0 && (
         <p className="text-amber-700 text-sm mt-4 bg-amber-50 border border-amber-200 rounded px-3 py-2">
           ⚠ Always verify the part fits your exact car (VIN / part number) before buying.
+        </p>
+      )}
+
+      {/* LT skaidrumo žinutė: Amazon/eBay neturi .lt — rodom tik kai regionas Lietuva
+          IR tarp rezultatų realiai yra tokia parduotuvė (kitaip žinutė būtų nereikalinga). */}
+      {region === "Lithuania" &&
+        results.some(r => {
+          const s = (r.store || "").toLowerCase();
+          return s.includes("amazon") || s.includes("ebay");
+        }) && (
+        <p className="text-gray-500 text-sm mt-2">
+          🇱🇹 Amazon ir eBay neturi lietuviškos svetainės — nuorodos veda į artimiausią ES parduotuvę, kuri veža į Lietuvą.
         </p>
       )}
 

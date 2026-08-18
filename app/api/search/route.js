@@ -54,27 +54,54 @@ const AFFILIATE_STORES = [
   { match: 'amazon', tag: 'bapkes-21' },
 ];
 
+// Regionų nustatymai: kokias parduotuves prioritetizuoti (prompt'e) ir kokie
+// domenai statant paieškos nuorodas. Amazon/eBay neturi .lt, tad Lietuvai
+// vedam į .de (jie veža į LT) + vietinius autodoc.lt / ovoko.lt / autoplius.lt.
+const REGIONS = {
+  Lithuania: {
+    stores: 'Lithuanian stores (autodoc.lt, ovoko.lt, autoplius.lt, rrr.lt) and EU stores that ship to Lithuania',
+    autodoc: 'https://www.autodoc.lt/search?keyword=',
+    amazon: 'https://www.amazon.de/s?k=',        // nėra amazon.lt; .de veža į LT (turi EN kalbos jungiklį)
+    ebay: 'https://www.ebay.com/sch/i.html?_nkw=', // .com angliškas/tarptautinis, draugiškesnis nei .de
+    google: 'https://www.google.lt/search?q=',
+  },
+  Germany: {
+    stores: 'German stores (Autodoc.de, kfzteile24.de, eBay.de, Amazon.de, oscaro.de)',
+    autodoc: 'https://www.autodoc.de/search?keyword=',
+    amazon: 'https://www.amazon.de/s?k=',
+    ebay: 'https://www.ebay.de/sch/i.html?_nkw=',
+    google: 'https://www.google.de/search?q=',
+  },
+  Europe: {
+    stores: 'European car-parts stores (Autodoc, kfzteile24, eBay Motors, Amazon.de, oscaro)',
+    autodoc: 'https://www.autodoc.de/search?keyword=',
+    amazon: 'https://www.amazon.de/s?k=',
+    ebay: 'https://www.ebay.de/sch/i.html?_nkw=',
+    google: 'https://www.google.com/search?q=',
+  },
+};
+
 // Sukuria PAIEŠKOS nuorodą parduotuvėje pagal dalies pavadinimą.
 // Claude URL nepatikimi (išgalvoti → pradinis puslapis ar ne ta prekė),
 // tad vedam vartotoją į parduotuvės paiešką su ta dalimi — visada relevantiška.
-function storeSearchUrl(product) {
+function storeSearchUrl(product, regionCfg) {
   const q = encodeURIComponent(product.name || '');
   const store = (product.store || '').toLowerCase();
-  // Tik patikrintai veikiantys formatai. Kiti → Google paieška (visada veikia).
-  if (store.includes('amazon')) return `https://www.amazon.de/s?k=${q}`;
-  if (store.includes('ebay')) return `https://www.ebay.de/sch/i.html?_nkw=${q}`;
-  if (store.includes('autodoc')) return `https://www.autodoc.de/search?keyword=${q}`;
-  // Nežinoma / nepatikrinta parduotuvė → Google paieška (veda į relevantiškus rezultatus).
-  return `https://www.google.com/search?q=${q}`;
+  // Tik patikrintai veikiantys formatai, domenas pagal regioną. Kiti → Google.
+  if (store.includes('amazon')) return `${regionCfg.amazon}${q}`;
+  if (store.includes('ebay')) return `${regionCfg.ebay}${q}`;
+  if (store.includes('autodoc')) return `${regionCfg.autodoc}${q}`;
+  // Nežinoma / nepatikrinta parduotuvė → regiono Google paieška.
+  return `${regionCfg.google}${q}`;
 }
 
-function withAffiliate(product) {
+function withAffiliate(product, regionCfg) {
   const storeLower = (product.store || '').toLowerCase();
   const affiliate = AFFILIATE_STORES.find(a => storeLower.includes(a.match));
   const isAffiliate = Boolean(affiliate);
 
   // Naudojam paieškos URL vietoj (nepatikimo) Claude produkto URL.
-  let url = storeSearchUrl(product);
+  let url = storeSearchUrl(product, regionCfg);
   if (affiliate) {
     const separator = url.includes('?') ? '&' : '?';
     url = `${url}${separator}tag=${affiliate.tag}`;
@@ -82,17 +109,19 @@ function withAffiliate(product) {
   return { ...product, url, isAffiliate };
 }
 
-function processResults(results) {
+function processResults(results, regionCfg) {
   return results
-    .map(withAffiliate)
+    .map(product => withAffiliate(product, regionCfg))
     .sort((a, b) => (b.isAffiliate ? 1 : 0) - (a.isAffiliate ? 1 : 0));
 }
 
 export async function POST(request) {
   const body = await request.json();
-  const { car, part, condition } = body;
-  // Cache raktas iš visų trijų laukų (būklė svarbi — OEM ir used duoda skirtingus rezultatus).
-  const key = `${car} | ${part} | ${condition}`.toLowerCase().trim();
+  const { car, part, condition, region } = body;
+  const regionCfg = REGIONS[region] || REGIONS.Europe; // nežinomas/tuščias → Visa Europa
+  // Cache raktas iš VISŲ laukų. Regionas SVARBUS: LT ir DE turi skirtingas parduotuves
+  // ir kainas, tad to paties įrašo negalim grąžinti abiem (kitaip lietuvis gautų vokiškus).
+  const key = `${car} | ${part} | ${condition} | ${region}`.toLowerCase().trim();
 
   // 1. TIKSLUS cache (nemokamas — be embedding). Jei toks pat tekstas ir šviežias → grąžinam.
   const { data: exact } = await supabase
@@ -102,7 +131,7 @@ export async function POST(request) {
     .maybeSingle();
 
   if (exact && isFresh(exact.created_at)) {
-    return Response.json({ results: processResults(exact.results), checkedAt: exact.created_at });
+    return Response.json({ results: processResults(exact.results, regionCfg), checkedAt: exact.created_at });
   }
 
   // 2. Nėra tikslaus atitikmens — skaičiuojam embedding ir ieškom PANAŠIOS paieškos pagal PRASMĘ.
@@ -115,7 +144,7 @@ export async function POST(request) {
   });
 
   if (matches && matches.length > 0 && isFresh(matches[0].created_at)) {
-    return Response.json({ results: processResults(matches[0].results), checkedAt: matches[0].created_at });
+    return Response.json({ results: processResults(matches[0].results, regionCfg), checkedAt: matches[0].created_at });
   }
 
   // 3. Nieko panašaus cache'e — tikra web paieška.
@@ -134,8 +163,8 @@ Part needed: "${part}"
 Condition preference: "${condition}" (if "Any", include a mix; otherwise prefer that condition).
 
 First, based on the exact engine/variant, determine the correct part specification for this car.
-Then search the web (European car-parts stores like Autodoc, kfzteile24, eBay Motors, Amazon.de, oscaro) for 3 real listings that FIT this specific car, with REAL current prices in EUR.
-Only include parts that genuinely fit the given car — fitment accuracy is critical.
+Then search the web — PRIORITIZE ${regionCfg.stores} — for 3 real listings that FIT this specific car, with REAL current prices in EUR.
+Prefer listings the buyer in this region can actually order (in stock, ships to them). Only include parts that genuinely fit the given car — fitment accuracy is critical.
 Each object must have:
 - id (number)
 - name (string, the real part name incl. brand)
@@ -172,5 +201,5 @@ Respond with ONLY the JSON array, no other text.`
     created_at: now,
   });
 
-  return Response.json({ results: processResults(results), checkedAt: now });
+  return Response.json({ results: processResults(results, regionCfg), checkedAt: now });
 }
