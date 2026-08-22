@@ -61,6 +61,9 @@ const AFFILIATE_STORES = [
 const REGIONS = {
   Lithuania: {
     stores: 'Lithuanian stores (autodoc.lt, ovoko.lt, autoplius.lt, rrr.lt) and EU stores that ship to Lithuania',
+    // allowed_domains web search'ui: apriboja paiešką tik iki šių parduotuvių →
+    // mažiau atsitiktinio web turinio (pigiau) + patikimesnis fitment (be blog'ų/forumų).
+    domains: ['autodoc.lt', 'ovoko.lt', 'autoplius.lt', 'rrr.lt', 'kfzteile24.de', 'amazon.de', 'ebay.com'],
     autodoc: 'https://www.autodoc.lt/search?keyword=',
     amazon: 'https://www.amazon.de/s?k=',        // nėra amazon.lt; .de veža į LT (turi EN kalbos jungiklį)
     ebay: 'https://www.ebay.com/sch/i.html?_nkw=', // .com angliškas/tarptautinis, draugiškesnis nei .de
@@ -68,6 +71,7 @@ const REGIONS = {
   },
   Germany: {
     stores: 'German stores (Autodoc.de, kfzteile24.de, eBay.de, Amazon.de, oscaro.de)',
+    domains: ['autodoc.de', 'kfzteile24.de', 'ebay.de', 'amazon.de', 'oscaro.de'],
     autodoc: 'https://www.autodoc.de/search?keyword=',
     amazon: 'https://www.amazon.de/s?k=',
     ebay: 'https://www.ebay.de/sch/i.html?_nkw=',
@@ -75,6 +79,7 @@ const REGIONS = {
   },
   Europe: {
     stores: 'European car-parts stores (Autodoc, kfzteile24, eBay Motors, Amazon.de, oscaro)',
+    domains: ['autodoc.de', 'kfzteile24.de', 'amazon.de', 'ebay.com', 'oscaro.com', 'mister-auto.com'],
     autodoc: 'https://www.autodoc.de/search?keyword=',
     amazon: 'https://www.amazon.de/s?k=',
     ebay: 'https://www.ebay.de/sch/i.html?_nkw=',
@@ -122,9 +127,15 @@ async function runSearch(jobId, key, embedding, car, part, condition, regionCfg)
   try {
     const message = await client.messages.create({
       model: 'claude-sonnet-4-6',
-      max_tokens: 2000,
+      max_tokens: 1200, // 3 kompaktiški JSON objektai telpa; mažiau = pigiau + apsauga nuo runaway
       tools: [
-        { type: 'web_search_20260209', name: 'web_search', max_uses: 1 }
+        {
+          type: 'web_search_20260209',
+          name: 'web_search',
+          max_uses: 1,
+          // Apribojam paiešką iki regiono parduotuvių: mažiau web turinio (pigiau) + patikimiau.
+          allowed_domains: regionCfg.domains,
+        }
       ],
       messages: [
         {
