@@ -121,6 +121,39 @@ function processResults(results, regionCfg) {
     .sort((a, b) => (b.isAffiliate ? 1 : 0) - (a.isAffiliate ? 1 : 0));
 }
 
+// ── PAIEŠKŲ LIMITAS pagal IP (saugo kreditus): 3 ŠVIEŽIOS paieškos / 24h. ──
+// Cache hit'ai šitos funkcijos NEKVIEČIA → nemokami ir neriboti.
+const SEARCH_LIMIT = 3;
+
+async function checkAndConsume(ip) {
+  const now = Date.now();
+  const { data: row } = await supabase
+    .from('rate_limits')
+    .select('count, window_start')
+    .eq('ip', ip)
+    .maybeSingle();
+
+  // Ar dabartinis 24h langas dar galioja? Jei ne (arba nėra įrašo) — pradedam naują langą.
+  let count = 0;
+  let windowStart = now;
+  if (row && (now - new Date(row.window_start).getTime() < DAY_MS)) {
+    count = row.count;
+    windowStart = new Date(row.window_start).getTime();
+  }
+
+  if (count >= SEARCH_LIMIT) {
+    return { allowed: false, resetAt: new Date(windowStart + DAY_MS).toISOString() };
+  }
+
+  // Suvartojam vieną — įrašom padidintą skaičių (window_start lieka to paties lango).
+  await supabase.from('rate_limits').upsert({
+    ip,
+    count: count + 1,
+    window_start: new Date(windowStart).toISOString(),
+  });
+  return { allowed: true, remaining: SEARCH_LIMIT - (count + 1) };
+}
+
 // ── LĖTAS DARBAS (vyksta FONE per after(), po to kai POST jau grąžino jobId) ──
 // Padaro tikrą Claude web paiešką ir įrašo rezultatus į job eilutę (+ į cache).
 async function runSearch(jobId, key, embedding, car, part, condition, regionCfg) {
@@ -201,6 +234,8 @@ Respond with ONLY the JSON array, no other text.`
 export async function POST(request) {
   const body = await request.json();
   const { car, part, condition, region } = body;
+  // Vartotojo IP (Vercel deda x-forwarded-for). Naudojam limitui pagal IP.
+  const ip = (request.headers.get('x-forwarded-for') || '').split(',')[0].trim() || 'unknown';
   const regionCfg = REGIONS[region] || REGIONS.Europe; // nežinomas/tuščias → Visa Europa
   // Cache raktas iš VISŲ laukų. Regionas SVARBUS: LT ir DE turi skirtingas parduotuves
   // ir kainas, tad to paties įrašo negalim grąžinti abiem (kitaip lietuvis gautų vokiškus).
@@ -228,6 +263,17 @@ export async function POST(request) {
 
   if (matches && matches.length > 0 && isFresh(matches[0].created_at)) {
     return Response.json({ status: 'done', results: processResults(matches[0].results, regionCfg), checkedAt: matches[0].created_at });
+  }
+
+  // Limitas tikrinamas TIK ČIA — po to, kai jau žinom, kad tai ŠVIEŽIA (mokama) paieška.
+  // Cache hit'ai grįžo aukščiau ir limito nepalietė (nemokami).
+  const gate = await checkAndConsume(ip);
+  if (!gate.allowed) {
+    return Response.json({
+      error: 'rate_limit',
+      message: 'You have used your 3 free searches. Please try again tomorrow.',
+      resetAt: gate.resetAt,
+    }, { status: 429 });
   }
 
   // 3. Nieko cache'e — sukuriam "job" eilutę (skambutuką) ir paleidžiam paiešką FONE.

@@ -92,6 +92,12 @@ export default function Home() {
         method: 'POST',
         body: JSON.stringify({ car: car, part: part, condition: condition, region: region })
       });
+      // Dienos limitas išnaudotas (429) — rodom aiškią žinutę, ne bendrą klaidą.
+      if (response.status === 429) {
+        const limitData = await response.json();
+        setError(limitData.message || "Daily search limit reached. Please try again tomorrow.");
+        return; // finally išjungs loading
+      }
       if (!response.ok) {
         throw new Error("Server error");
       }
