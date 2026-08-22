@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import ProductCard from '@/components/ProductCard';
 import CarSelector from '@/components/CarSelector';
+import RegionGate from '@/components/RegionGate';
 
 export default function Home() {
   // Vietoj vieno "query" dabar TRYS laukai: automobilis, dalis, būklė.
@@ -14,6 +15,7 @@ export default function Home() {
   const [checkedAt, setCheckedAt] = useState("");
   const [savedItems, setSavedItems] = useState([]);
   const [region, setRegion] = useState("Europe");
+  const [needsGate, setNeedsGate] = useState(false); // ar rodyti pirmo apsilankymo vartus
 
   useEffect(() => {
     const stored = localStorage.getItem('watchlist');
@@ -22,12 +24,21 @@ export default function Home() {
     }
   }, []);
 
-   useEffect(() => {
-  const storedRegion = localStorage.getItem('region'); // paskaito įrašą "region"
-  if (storedRegion) {                                   // jei vartotojas jau kada rinkosi
-    setRegion(storedRegion);                            // atstatom jo pasirinkimą
+  useEffect(() => {
+    const storedRegion = localStorage.getItem('region'); // paskaito įrašą "region"
+    if (storedRegion) {
+      setRegion(storedRegion);   // jau rinkosi anksčiau — vartų nerodom
+    } else {
+      setNeedsGate(true);        // pirmas apsilankymas — rodom vartus
     }
   }, []);
+
+  // Vartotojas vartuose pasirinko regioną + sutiko → įsimenam ir uždarom vartus.
+  function handleRegionConfirm(chosen) {
+    setRegion(chosen);
+    localStorage.setItem('region', chosen);
+    setNeedsGate(false);
+  }
 
   function isSaved(product) {
     return savedItems.some(p => p.name === product.name && p.store === product.store);
@@ -118,7 +129,10 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gray-100 p-8">
-      <h1 className="text-4xl font-bold text-blue-600">Bapkes</h1>
+      {/* Pirmo apsilankymo vartai — overlay virš svetainės, kol nepasirinktas regionas. */}
+      {needsGate && <RegionGate onConfirm={handleRegionConfirm} />}
+
+      <h1 className="text-4xl font-bold text-slate-900">Detalo</h1>
       <p className="text-gray-500 mb-6">Find the right car part with AI</p>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-3">
@@ -157,14 +171,14 @@ export default function Home() {
           <option value="Lithuania">🇱🇹 Lietuva</option>
           <option value="Germany">🇩🇪 Vokietija</option>
         </select>
-        <button className="bg-blue-600 text-white px-6 py-2 rounded-lg disabled:opacity-50" type="submit" disabled={loading}>
+        <button className="bg-teal-600 text-white px-6 py-2 rounded-lg hover:bg-teal-700 disabled:opacity-50" type="submit" disabled={loading}>
           Search
         </button>
         </div>
       </form>
 
       {loading && (
-        <p className="text-blue-600 mt-3 animate-pulse">
+        <p className="text-teal-700 mt-3 animate-pulse">
           🔧 Searching real stores for your part — this can take up to a minute...
         </p>
       )}

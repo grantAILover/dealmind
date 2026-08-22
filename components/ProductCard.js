@@ -46,7 +46,7 @@ export default function ProductCard({ name, price, dealScore, store, url, image,
 
       {/* Juostelės: kaina ir parduotuvė */}
       <div className="space-y-1 mb-3">
-        <div className="bg-gray-50 rounded px-3 py-2 text-blue-600 font-bold text-lg">€{price}</div>
+        <div className="bg-gray-50 rounded px-3 py-2 text-teal-700 font-bold text-lg">€{price}</div>
         <div className="bg-gray-50 rounded px-3 py-2 text-sm text-gray-600">at {store}</div>
       </div>
 
@@ -56,7 +56,7 @@ export default function ProductCard({ name, price, dealScore, store, url, image,
           href={url}
           target="_blank"
           rel="sponsored noopener noreferrer"
-          className="flex-1 bg-blue-600 text-white text-center px-3 py-2 rounded-lg hover:bg-blue-700"
+          className="flex-1 bg-teal-600 text-white text-center px-3 py-2 rounded-lg hover:bg-teal-700"
         >
           View deal
         </a>
