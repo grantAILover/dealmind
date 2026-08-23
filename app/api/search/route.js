@@ -125,11 +125,6 @@ function processResults(results, regionCfg) {
 // Cache hit'ai šitos funkcijos NEKVIEČIA → nemokami ir neriboti.
 const SEARCH_LIMIT = 3;
 
-// [LAIKINA — async diagnostika] kai true, runSearch iškart pažymi 'searching' ir sustoja
-// PRIEŠ Claude kvietimą (nemokama). Testui, ar after() Vercel'yje apskritai pasileidžia.
-// PAŠALINTI po testo (grąžinti į false / ištrinti).
-const DIAGNOSTIC = true;
-
 async function checkAndConsume(ip) {
   const now = Date.now();
   const { data: row } = await supabase
@@ -163,11 +158,6 @@ async function checkAndConsume(ip) {
 // Padaro tikrą Claude web paiešką ir įrašo rezultatus į job eilutę (+ į cache).
 async function runSearch(jobId, key, embedding, car, part, condition, regionCfg) {
   try {
-    // [LAIKINA DIAGNOSTIKA] pažymim 'searching' iškart (be Claude) ir sustojam prieš paiešką.
-    // Jei job'as pavirsta pending→searching → after() VEIKIA (kaltas 60s limitas → queue/Pro).
-    await supabase.from('search_jobs').update({ status: 'searching' }).eq('id', jobId);
-    if (DIAGNOSTIC) return;
-
     const message = await client.messages.create({
       model: 'claude-sonnet-4-6',
       max_tokens: 1200, // 3 kompaktiški JSON objektai telpa; mažiau = pigiau + apsauga nuo runaway
