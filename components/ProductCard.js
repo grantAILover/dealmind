@@ -1,4 +1,5 @@
 "use client";
+import { track } from '@vercel/analytics';
 
 export default function ProductCard({ name, price, dealScore, store, url, image, condition, fits, partNumber, isSaved, onToggleSave }) {
   let scoreColor;
@@ -56,6 +57,7 @@ export default function ProductCard({ name, price, dealScore, store, url, image,
           href={url}
           target="_blank"
           rel="sponsored noopener noreferrer"
+          onClick={() => track('view_deal', { store: store, dealScore: dealScore })}
           className="flex-1 bg-teal-600 text-white text-center px-3 py-2 rounded-lg hover:bg-teal-700"
         >
           View deal

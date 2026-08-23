@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from 'react';
+import { track } from '@vercel/analytics';
 import ProductCard from '@/components/ProductCard';
 import CarSelector from '@/components/CarSelector';
 import RegionGate from '@/components/RegionGate';
@@ -85,6 +86,9 @@ export default function Home() {
     setError("");
     setResults([]);
     setCheckedAt("");
+
+    // Analytics: fiksuojam paiešką (be asmens duomenų — tik regionas + būklė).
+    track('search', { region: region, condition: condition });
 
     try {
       // 1. START — grąžina GREITAI: arba iškart rezultatus (cache), arba jobId (reikia laukti).
