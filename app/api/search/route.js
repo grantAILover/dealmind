@@ -1,8 +1,7 @@
-import Anthropic from '@anthropic-ai/sdk';
 import { createClient } from '@supabase/supabase-js';
-import { after } from 'next/server'; // suplanuoja darbą PO atsakymo išsiuntimo (fono paieška)
 
-const client = new Anthropic();
+// Claude paieška dabar vyksta Supabase Edge Function'e (search-worker), ne čia —
+// todėl Anthropic SDK ir after() nebereikia. Vercel tik pažadina worker'į.
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 
 export const maxDuration = 60;
@@ -12,28 +11,6 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 // Ar cache įrašas dar šviežias (jaunesnis nei 24h)?
 function isFresh(created_at) {
   return Date.now() - new Date(created_at).getTime() < DAY_MS;
-}
-
-// Ištraukia JSON masyvą iš teksto PATIKIMAI: nuo pirmo "[" skaičiuoja skliaustų
-// gylį (praleisdamas tekstą kabutėse) ir randa, kur masyvas realiai baigiasi.
-// Taip ignoruojam Claude paaiškinimus ir citatas kaip [1], [2] po masyvo.
-function extractJsonArray(text) {
-  const start = text.indexOf('[');
-  if (start === -1) return null;
-  let depth = 0, inString = false, escape = false;
-  for (let i = start; i < text.length; i++) {
-    const c = text[i];
-    if (escape) { escape = false; continue; }
-    if (c === '\\') { escape = true; continue; }
-    if (c === '"') { inString = !inString; continue; }
-    if (inString) continue;
-    if (c === '[') depth++;
-    else if (c === ']') {
-      depth--;
-      if (depth === 0) return text.slice(start, i + 1); // masyvas baigėsi čia
-    }
-  }
-  return null;
 }
 
 // Paverčia tekstą į embedding vektorių (1024 skaičiai) per Voyage AI.
@@ -154,80 +131,17 @@ async function checkAndConsume(ip) {
   return { allowed: true, remaining: SEARCH_LIMIT - (count + 1) };
 }
 
-// ── LĖTAS DARBAS (vyksta FONE per after(), po to kai POST jau grąžino jobId) ──
-// Padaro tikrą Claude web paiešką ir įrašo rezultatus į job eilutę (+ į cache).
-async function runSearch(jobId, key, embedding, car, part, condition, regionCfg) {
-  try {
-    const message = await client.messages.create({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 1200, // 3 kompaktiški JSON objektai telpa; mažiau = pigiau + apsauga nuo runaway
-      tools: [
-        {
-          type: 'web_search_20260209',
-          name: 'web_search',
-          max_uses: 1,
-          // Apribojam paiešką iki regiono parduotuvių: mažiau web turinio (pigiau) + patikimiau.
-          allowed_domains: regionCfg.domains,
-        }
-      ],
-      messages: [
-        {
-          role: 'user',
-          content: `Find a real, currently available CAR PART for this vehicle.
-Car: "${car}"
-Part needed: "${part}"
-Condition preference: "${condition}" (if "Any", include a mix; otherwise prefer that condition).
-
-First, based on the exact engine/variant, determine the correct part specification for this car.
-Then search the web — PRIORITIZE ${regionCfg.stores} — for 3 real listings that FIT this specific car, with REAL current prices in EUR.
-Prefer listings the buyer in this region can actually order (in stock, ships to them). Only include parts that genuinely fit the given car — fitment accuracy is critical.
-Each object must have:
-- id (number)
-- name (string, the real part name incl. brand)
-- price (number, the real current price in EUR)
-- store (string, the store where you found it)
-- url (string, direct link to the part's page)
-- image (string, direct URL to a photo of the part, ideally .jpg/.png/.webp)
-- condition (string: "OEM", "Aftermarket", or "Used")
-- partNumber (string, the manufacturer/OEM part number EXACTLY as shown on the real listing you found — do NOT guess or invent one; use "" if you do not actually see a part number)
-- fits (string, short note on fitment, e.g. "Fits BMW E46 320i 2000-2005")
-- dealScore (number 0-100: how good this price is vs the part's typical price)
-Respond with ONLY the JSON array, no other text.`
-        }
-      ]
-    });
-
-    const fullText = message.content
-      .filter(block => block.type === 'text')
-      .map(block => block.text)
-      .join('');
-
-    const jsonText = extractJsonArray(fullText);
-    if (!jsonText) {
-      await supabase.from('search_jobs').update({ status: 'error' }).eq('id', jobId);
-      return;
-    }
-    const results = JSON.parse(jsonText);
-    const now = new Date().toISOString();
-
-    // Saugom RAW rezultatus cache'e su embedding (kad ateity semantinė paieška juos rastų;
-    // raw = be affiliate tag'o, kad tag'o keitimas galiotų iškart visiems).
-    await supabase.from('search_cache').upsert({
-      query: key,
-      results: results,
-      embedding: embedding,
-      created_at: now,
-    });
-
-    // Job eilutėje saugom jau APDOROTUS rezultatus (su regiono URL + affiliate),
-    // kad GET/status galėtų juos grąžinti tiesiai (jis regiono nežino, tik jobId).
-    await supabase.from('search_jobs')
-      .update({ status: 'done', results: processResults(results, regionCfg) })
-      .eq('id', jobId);
-  } catch (err) {
-    // Klaida (pvz. Claude nepavyko) → pažymim job kaip "error", kad naršyklė nustotų klausinėti.
-    await supabase.from('search_jobs').update({ status: 'error' }).eq('id', jobId);
-  }
+// ── PAŽADINA Supabase Edge Function (search-worker), kuri atlieka LĖTĄ paiešką ant Supabase. ──
+// Grąžina greitą ACK (~1s); pati paieška tęsiasi FONE Supabase pusėje iki 150s (ne Vercel 60s).
+async function triggerWorker(payload) {
+  await fetch(`${process.env.SUPABASE_URL}/functions/v1/search-worker`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
 }
 
 // ── START: naršyklė kviečia čia. Grąžina GREITAI (cache arba jobId), nelaukia paieškos. ──
@@ -276,10 +190,10 @@ export async function POST(request) {
     }, { status: 429 });
   }
 
-  // 3. Nieko cache'e — sukuriam "job" eilutę (skambutuką) ir paleidžiam paiešką FONE.
+  // 3. Nieko cache'e — sukuriam "job" eilutę (su regionu, kad GET galėtų apdoroti rezultatus).
   const { data: job, error: jobErr } = await supabase
     .from('search_jobs')
-    .insert({ status: 'pending' })
+    .insert({ status: 'pending', region })
     .select('id')
     .single();
 
@@ -287,9 +201,21 @@ export async function POST(request) {
     return Response.json({ error: 'Could not start search' }, { status: 500 });
   }
 
-  // after() paleidžia runSearch TIK PO to, kai grąžinsim atsakymą žemiau — naršyklė nebelaukia
-  // 90s (jokio timeout'o kliento pusėje). Fono darbas turi iki maxDuration (60s).
-  after(() => runSearch(job.id, key, embedding, car, part, condition, regionCfg));
+  // Pažadinam Edge Function — ji atliks lėtą paiešką ant Supabase (iki 150s). await'inam tik greitą
+  // ACK; jei pažadinimas nepavyksta, pažymim job error, kad naršyklė nekabėtų.
+  try {
+    await triggerWorker({
+      jobId: job.id,
+      car, part, condition,
+      stores: regionCfg.stores,
+      domains: regionCfg.domains,
+      key,
+      embedding,
+    });
+  } catch (err) {
+    await supabase.from('search_jobs').update({ status: 'error' }).eq('id', job.id);
+    return Response.json({ error: 'Could not start search' }, { status: 500 });
+  }
 
   return Response.json({ status: 'pending', jobId: job.id });
 }
@@ -304,7 +230,7 @@ export async function GET(request) {
 
   const { data: job } = await supabase
     .from('search_jobs')
-    .select('status, results, created_at')
+    .select('status, results, created_at, region')
     .eq('id', jobId)
     .maybeSingle();
 
@@ -312,7 +238,9 @@ export async function GET(request) {
     return Response.json({ error: 'Job not found' }, { status: 404 });
   }
   if (job.status === 'done') {
-    return Response.json({ status: 'done', results: job.results, checkedAt: job.created_at });
+    // Job'e saugom RAW rezultatus — apdorojam (regiono URL + affiliate) ČIA, pagal job.region.
+    const regionCfg = REGIONS[job.region] || REGIONS.Europe;
+    return Response.json({ status: 'done', results: processResults(job.results, regionCfg), checkedAt: job.created_at });
   }
   // "pending" arba "error" — naršyklė pagal tai arba klausia toliau, arba nustoja.
   return Response.json({ status: job.status });
