@@ -48,7 +48,8 @@ async function runSearch(payload: any) {
       max_tokens: 1200,
       tools: [
         // deno-lint-ignore no-explicit-any
-        { type: 'web_search_20260209', name: 'web_search', max_uses: 1, allowed_domains: domains } as any,
+        // allowed_domains laikinai PAŠALINTAS — įtariam, kad jis verčia web search kabti >130s.
+        { type: 'web_search_20260209', name: 'web_search', max_uses: 1 } as any,
       ],
       messages: [
         {
