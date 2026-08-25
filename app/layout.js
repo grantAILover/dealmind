@@ -25,7 +25,7 @@ export default function RootLayout({ children }) {
     >
       <body className="min-h-full flex flex-col">
         {children}
-        <footer className="text-center text-xs text-gray-500 p-4">
+        <footer className="text-center text-xs text-dim px-6 py-8 mt-auto border-t border-white/8">
           Detalo may earn a commission when you buy through links on this site.
           Prices and availability are indicative and may change.
         </footer>

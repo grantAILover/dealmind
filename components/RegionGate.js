@@ -8,32 +8,36 @@ const REGION_OPTIONS = [
   { value: 'Germany', label: '🇩🇪 Vokietija' },
 ];
 
-// Pirmo apsilankymo "vartai": modalas su tamsiu permatomu fonu (overlay) + langelis viduryje.
+// Pirmo apsilankymo "vartai": modalas su tamsiu overlay + langelis viduryje.
 // Vartotojas pasirenka regioną + sutinka su sąlygomis → onConfirm(pasirinktas regionas).
 export default function RegionGate({ onConfirm }) {
   const [selected, setSelected] = useState("");   // koks regionas pažymėtas
   const [agreed, setAgreed] = useState(false);    // ar pažymėtas "sutinku" checkbox
-  const canEnter = selected && agreed;            // "Įeiti" aktyvus tik kai abu
+  const canEnter = selected && agreed;            // "Enter" aktyvus tik kai abu
 
   return (
-    // Overlay: fixed inset-0 = padengia visą ekraną; bg-black/50 = 50% permatomas juodas fonas.
-    // flex + center = langelis viduryje. z-50 = virš visko.
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-xl shadow-xl p-8 max-w-md w-full">
-        <h1 className="text-3xl font-bold text-slate-900 mb-1">Detalo</h1>
-        <p className="text-gray-500 mb-6">Find the right car part with AI</p>
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
+      <div className="bg-panel border border-white/8 rounded-xl shadow-2xl p-8 max-w-md w-full">
+        <div className="flex items-center gap-2.5 mb-1">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+            <path d="M8 5.3h8l4 6.9-4 6.9H8l-4-6.9 4-6.9z" stroke="#7fd1e6" strokeWidth="1.6" strokeLinejoin="round" />
+            <circle cx="12" cy="12.2" r="3.1" stroke="#7fd1e6" strokeWidth="1.6" />
+          </svg>
+          <h1 className="text-2xl font-bold text-txt tracking-tight">Detalo</h1>
+        </div>
+        <p className="text-muted mb-6">Find the right car part with AI</p>
 
-        <p className="font-semibold text-gray-800 mb-2">Choose your region</p>
+        <p className="font-semibold text-txt mb-2">Choose your region</p>
         <div className="flex flex-col gap-2 mb-5">
           {REGION_OPTIONS.map(opt => (
             <button
               key={opt.value}
               type="button"
               onClick={() => setSelected(opt.value)}
-              className={`border rounded-lg px-4 py-2 text-left ${
+              className={`border rounded-lg px-4 py-2 text-left transition-colors ${
                 selected === opt.value
-                  ? 'border-teal-600 bg-teal-50 text-slate-900'      // pažymėtas
-                  : 'border-gray-300 text-gray-700 hover:bg-gray-50'  // nepažymėtas
+                  ? 'border-frost bg-frost/10 text-txt'          // pažymėtas
+                  : 'border-white/12 text-muted hover:bg-white/5'  // nepažymėtas
               }`}
             >
               {opt.label}
@@ -41,13 +45,13 @@ export default function RegionGate({ onConfirm }) {
           ))}
         </div>
 
-        {/* Sutikimas — tas pats, kas footer'yje, bet čia vartotojas jį patvirtina prieš įeidamas. */}
-        <label className="flex items-start gap-2 text-sm text-gray-600 mb-5">
+        {/* Sutikimas — tas pats, kas footer'yje, bet čia patvirtinamas prieš įeinant. */}
+        <label className="flex items-start gap-2.5 text-sm text-muted mb-6">
           <input
             type="checkbox"
             checked={agreed}
             onChange={(e) => setAgreed(e.target.checked)}
-            className="mt-1"
+            className="mt-1 accent-[#7fd1e6]"
           />
           <span>
             I understand prices are indicative and Detalo may earn a commission from links on this site.
@@ -58,7 +62,7 @@ export default function RegionGate({ onConfirm }) {
           type="button"
           onClick={() => onConfirm(selected)}
           disabled={!canEnter}
-          className="w-full bg-teal-600 text-white py-2 rounded-lg hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full bg-frost text-frostink font-semibold py-2.5 rounded-lg hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed"
         >
           Enter
         </button>

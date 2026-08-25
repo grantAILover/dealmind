@@ -2,71 +2,89 @@
 import { track } from '@vercel/analytics';
 
 export default function ProductCard({ name, price, dealScore, store, url, image, condition, fits, partNumber, isSaved, onToggleSave }) {
-  let scoreColor;
-  if (dealScore >= 80) {
-    scoreColor = "bg-green-500 text-white";
-  } else if (dealScore >= 60) {
-    scoreColor = "bg-yellow-500 text-white";
-  } else {
-    scoreColor = "bg-red-500 text-white";
-  }
+  // Subtilus deal indikatorius (dot + žodis) vietoj loud spalvoto skaičiaus badge'o.
+  let dealLabel, dealText, dotColor;
+  if (dealScore >= 80) { dealLabel = "Great price"; dealText = "text-frost"; dotColor = "bg-frost"; }
+  else if (dealScore >= 60) { dealLabel = "Fair price"; dealText = "text-amberw"; dotColor = "bg-amberw"; }
+  else { dealLabel = "Check price"; dealText = "text-dim"; dotColor = "bg-dim"; }
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg shadow-md p-4 flex flex-col">
-      {/* Nuotrauka viršuje. Sulūžusią (onError) paslepiam, kad kortelė liktų tvarkinga. */}
+    <div className="bg-panel border border-white/8 rounded-xl p-4 flex flex-col transition-colors hover:border-frost/35">
+      {/* Nuotrauka viršuje. Sulūžusią (onError) paslepiam. */}
       {image && (
         <img
           src={image}
           alt={name}
-          className="w-full h-40 object-contain mb-3"
+          className="w-full h-36 object-contain rounded-lg bg-panel2 mb-3"
           onError={(e) => { e.currentTarget.style.display = 'none'; }}
         />
       )}
 
-      {/* Pavadinimas + deal score ženkliukas */}
-      <div className="flex items-start justify-between gap-2 mb-2">
-        <p className="font-bold text-sm text-gray-900 line-clamp-2">{name}</p>
-        <span className={`text-xs font-bold px-2 py-1 rounded shrink-0 ${scoreColor}`}>
-          {dealScore}
+      <p className="text-txt font-semibold text-sm leading-snug line-clamp-2">{name}</p>
+
+      <div className="h-px bg-white/8 my-3" />
+
+      {/* Fitment — frost check ikona */}
+      {fits && (
+        <div className="flex items-center gap-2 text-[13px] text-txt mb-2.5">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" className="shrink-0">
+            <path d="M5 12.5l4.5 4.5L19 7.5" stroke="#7fd1e6" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          <span className="line-clamp-1">{fits}</span>
+        </div>
+      )}
+
+      {/* Spec eilutės — techninis "katalogo įrašo" jausmas */}
+      <div className="flex flex-col gap-1.5 text-xs mb-3.5">
+        {partNumber && (
+          <div className="flex justify-between gap-2">
+            <span className="text-dim">OEM number</span>
+            <span className="text-muted font-mono">{partNumber}</span>
+          </div>
+        )}
+        {condition && (
+          <div className="flex justify-between gap-2 items-center">
+            <span className="text-dim">Type</span>
+            <span className="text-muted border border-white/12 rounded px-2 py-0.5">{condition}</span>
+          </div>
+        )}
+        <div className="flex justify-between gap-2">
+          <span className="text-dim">Store</span>
+          <span className="text-muted">{store}</span>
+        </div>
+      </div>
+
+      {/* Kaina + deal indikatorius */}
+      <div className="flex items-baseline justify-between mb-3.5 mt-auto">
+        <span className="text-xl font-bold text-txt tracking-tight">€{price}</span>
+        <span className={`flex items-center gap-1.5 text-[11.5px] ${dealText}`}>
+          <span className={`w-1.5 h-1.5 rounded-full ${dotColor}`} />
+          {dealLabel}
         </span>
       </div>
 
-      {/* Dalies tipas (OEM/Aftermarket/Used) + fitment pastaba */}
-      {condition && (
-        <span className="text-xs font-semibold px-2 py-1 rounded bg-slate-100 text-slate-700 mb-1 self-start">
-          {condition}
-        </span>
-      )}
-      {fits && <p className="text-xs text-green-700 mb-1">✓ {fits}</p>}
-      {partNumber && (
-        <p className="text-xs text-gray-600 mb-2">
-          Part #: <span className="font-mono font-semibold">{partNumber}</span>
-          <span className="text-gray-400"> — verify vs your VIN</span>
-        </p>
-      )}
-
-      {/* Juostelės: kaina ir parduotuvė */}
-      <div className="space-y-1 mb-3">
-        <div className="bg-gray-50 rounded px-3 py-2 text-teal-700 font-bold text-lg">€{price}</div>
-        <div className="bg-gray-50 rounded px-3 py-2 text-sm text-gray-600">at {store}</div>
-      </div>
-
-      {/* Mygtukai apačioje: nuoroda į parduotuvę + Save. mt-auto pastumia juos į kortelės apačią. */}
-      <div className="flex gap-2 mt-auto">
+      {/* Mygtukai */}
+      <div className="flex gap-2">
         <a
           href={url}
           target="_blank"
           rel="sponsored noopener noreferrer"
           onClick={() => track('view_deal', { store: store, dealScore: dealScore })}
-          className="flex-1 bg-teal-600 text-white text-center px-3 py-2 rounded-lg hover:bg-teal-700"
+          className="flex-1 flex items-center justify-center gap-1.5 bg-frost text-frostink font-semibold text-[13px] text-center px-3 py-2 rounded-lg hover:brightness-110"
         >
           View deal
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+            <path d="M7 17L17 7M17 7H9M17 7v8" stroke="#08222c" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
         </a>
         <button
           onClick={onToggleSave}
-          className={`px-3 py-2 rounded-lg border ${isSaved ? 'bg-gray-800 text-white border-gray-800' : 'bg-white text-gray-700 border-gray-300'}`}
+          aria-label={isSaved ? "Saved" : "Save"}
+          className={`px-3 py-2 rounded-lg border flex items-center ${isSaved ? 'bg-frost/15 border-frost/40 text-frost' : 'border-white/12 text-muted hover:text-txt'}`}
         >
-          {isSaved ? "Saved" : "Save"}
+          <svg width="15" height="15" viewBox="0 0 24 24" fill={isSaved ? '#7fd1e6' : 'none'}>
+            <path d="M6 4h12v16l-6-4-6 4V4z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+          </svg>
         </button>
       </div>
     </div>

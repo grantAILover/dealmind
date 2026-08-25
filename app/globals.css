@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #0f1826;   /* abyss — gilus navy pagrindas */
+  --foreground: #e9f1f8;   /* frost-white tekstas */
 }
 
 @theme inline {
@@ -10,10 +10,34 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  /* Abyss + Frost paletė — naudojam kaip bg-panel, text-frost, border-frost ir t.t. */
+  --color-abyss: #0f1826;
+  --color-panel: #16212f;
+  --color-panel2: #1d2836;
+  --color-frost: #7fd1e6;
+  --color-frostink: #08222c;
+  --color-txt: #e9f1f8;
+  --color-muted: #9db0c1;
+  --color-dim: #647689;
+  --color-amberw: #e0b155;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
+}
+
+/* Subtili frost linija pačiame viršuje (vietoj glow blob'o — amatas, ne klišė). */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(127, 209, 230, 0.5), transparent);
+  z-index: 50;
+  pointer-events: none;
 }

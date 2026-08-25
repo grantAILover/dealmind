@@ -41,18 +41,18 @@ export default function CarSelector({ onChange }) {
       {/* MARKĖ su autocomplete */}
       <div className="relative">
         <input
-          className="border border-gray-300 rounded-lg px-4 py-2 w-52 bg-white text-gray-900"
+          className="border border-white/10 rounded-lg px-4 py-2 w-52 bg-panel2 text-txt placeholder-dim"
           type="text"
           value={makeQuery}
           onChange={(e) => { setMakeQuery(e.target.value); setSelectedMake(""); }}
           placeholder="Car make (e.g. Volkswagen)"
         />
         {suggestions.length > 0 && (
-          <ul className="absolute z-10 w-full bg-white border border-gray-200 rounded-lg mt-1 shadow-lg max-h-60 overflow-auto">
+          <ul className="absolute z-10 w-full bg-panel2 border border-white/10 rounded-lg mt-1 shadow-lg max-h-60 overflow-auto">
             {suggestions.map(m => (
               <li
                 key={m}
-                className="px-4 py-2 hover:bg-blue-50 cursor-pointer text-gray-900"
+                className="px-4 py-2 hover:bg-white/5 cursor-pointer text-txt"
                 onClick={() => { setSelectedMake(m); setMakeQuery(m); }}
               >
                 {m}
@@ -64,7 +64,7 @@ export default function CarSelector({ onChange }) {
 
       {/* METAI */}
       <select
-        className="border border-gray-300 rounded-lg px-4 py-2 bg-white text-gray-900 disabled:opacity-50"
+        className="border border-white/10 rounded-lg px-4 py-2 bg-panel2 text-txt disabled:opacity-50"
         value={year}
         onChange={(e) => setYear(e.target.value)}
         disabled={!selectedMake}
@@ -75,7 +75,7 @@ export default function CarSelector({ onChange }) {
 
       {/* MODELIS + VARIKLIS (laisvas tekstas — tikslumui, ko NHTSA neturi) */}
       <input
-        className="border border-gray-300 rounded-lg px-4 py-2 w-64 bg-white text-gray-900 disabled:opacity-50"
+        className="border border-white/10 rounded-lg px-4 py-2 w-64 bg-panel2 text-txt placeholder-dim disabled:opacity-50"
         type="text"
         value={model}
         onChange={(e) => setModel(e.target.value)}

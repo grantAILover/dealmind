@@ -138,121 +138,145 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 p-8">
+    <div className="min-h-screen">
       {/* Pirmo apsilankymo vartai — overlay virš svetainės, kol nepasirinktas regionas. */}
       {needsGate && <RegionGate onConfirm={handleRegionConfirm} />}
 
-      <h1 className="text-4xl font-bold text-slate-900">Detalo</h1>
-      <p className="text-gray-500 mb-6">Find the right car part with AI</p>
-
-      <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-        {/* Automobilio pasirinkimas su autocomplete — praneša pilną automobilį per setCar. */}
-        <CarSelector onChange={setCar} />
-
-        <div className="flex flex-wrap gap-2 items-center">
-        <input
-          className="border border-gray-300 rounded-lg px-4 py-2 w-64 bg-white text-gray-900"
-          type="text"
-          value={part}
-          onChange={(e) => setPart(e.target.value)}
-          placeholder="Part needed (e.g. front brake pads)"
-        />
-        {/* select = išskleidžiamas sąrašas. value/onChange kaip input'e. */}
-        <select
-          className="border border-gray-300 rounded-lg px-4 py-2 bg-white text-gray-900"
-          value={condition}
-          onChange={(e) => setCondition(e.target.value)}
-        >
-          <option value="Any">Any condition</option>
-          <option value="OEM">OEM / Original</option>
-          <option value="Aftermarket">Aftermarket</option>
-          <option value="Used">Used</option>
-        </select>
-        {/* Regionas — kaip condition, bet onChange DAR įsimena į localStorage (kad išliktų perkrovus). */}
-        <select
-          className="border border-gray-300 rounded-lg px-4 py-2 bg-white text-gray-900"
-          value={region}
-          onChange={(e) => {
-            setRegion(e.target.value);
-            localStorage.setItem('region', e.target.value);
-          }}
-        >
-          <option value="Europe">🇪🇺 Visa Europa</option>
-          <option value="Lithuania">🇱🇹 Lietuva</option>
-          <option value="Germany">🇩🇪 Vokietija</option>
-        </select>
-        <button className="bg-teal-600 text-white px-6 py-2 rounded-lg hover:bg-teal-700 disabled:opacity-50" type="submit" disabled={loading}>
-          Search
-        </button>
-        </div>
-      </form>
-
-      {loading && (
-        <p className="text-teal-700 mt-3 animate-pulse">
-          🔧 Searching real stores for your part — this can take up to a minute...
-        </p>
-      )}
-      {error && <p className="text-red-600 mt-3">{error}</p>}
-      {checkedAt && <p className="text-gray-500 text-sm mt-3">Checked {timeAgo(checkedAt)}</p>}
-
-      {/* Fitment įspėjimas — rodomas tik kai yra rezultatų */}
-      {results.length > 0 && (
-        <p className="text-amber-700 text-sm mt-4 bg-amber-50 border border-amber-200 rounded px-3 py-2">
-          ⚠ Always verify the part fits your exact car (VIN / part number) before buying.
-        </p>
-      )}
-
-      {/* LT skaidrumo žinutė: Amazon/eBay neturi .lt — rodom tik kai regionas Lietuva
-          IR tarp rezultatų realiai yra tokia parduotuvė (kitaip žinutė būtų nereikalinga). */}
-      {region === "Lithuania" &&
-        results.some(r => {
-          const s = (r.store || "").toLowerCase();
-          return s.includes("amazon") || s.includes("ebay");
-        }) && (
-        <p className="text-gray-500 text-sm mt-2">
-          🇱🇹 Amazon ir eBay neturi lietuviškos svetainės — nuorodos veda į artimiausią ES parduotuvę, kuri veža į Lietuvą.
-        </p>
-      )}
-
-      <div className="grid grid-cols-3 gap-4 mt-6">
-        {results.map(product => (
-          <ProductCard
-            key={product.name + product.store}
-            name={product.name}
-            price={product.price}
-            dealScore={product.dealScore}
-            store={product.store}
-            url={product.url}
-            image={product.image}
-            condition={product.condition}
-            fits={product.fits}
-            partNumber={product.partNumber}
-            isSaved={isSaved(product)}
-            onToggleSave={() => toggleSave(product)}
-          />
-        ))}
-      </div>
-
-      {savedItems.length > 0 && (
-        <div className="mt-12">
-          <h2 className="text-2xl font-bold text-gray-800 mb-4">Your Watchlist</h2>
-          <div className="grid grid-cols-3 gap-4">
-            {savedItems.map(product => (
-              <ProductCard
-                key={product.name + product.store}
-                name={product.name}
-                price={product.price}
-                dealScore={product.dealScore}
-                store={product.store}
-                url={product.url}
-                image={product.image}
-                isSaved={isSaved(product)}
-                onToggleSave={() => toggleSave(product)}
-              />
-            ))}
+      <div className="max-w-5xl mx-auto px-6">
+        {/* NAV — logo (hex veržlė) + wordmark */}
+        <nav className="flex items-center h-16 border-b border-white/8">
+          <div className="flex items-center gap-2.5 font-semibold tracking-tight text-txt">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <path d="M8 5.3h8l4 6.9-4 6.9H8l-4-6.9 4-6.9z" stroke="#7fd1e6" strokeWidth="1.6" strokeLinejoin="round" />
+              <circle cx="12" cy="12.2" r="3.1" stroke="#7fd1e6" strokeWidth="1.6" />
+            </svg>
+            Detalo
           </div>
+        </nav>
+
+        {/* HERO — kairėn lygiuota, be gradiento/glow */}
+        <section className="pt-16 pb-8 max-w-2xl">
+          <h1 className="text-4xl font-bold tracking-tight leading-tight text-txt">
+            The exact part that fits your car — found for you.
+          </h1>
+          <p className="text-muted text-base mt-4 leading-relaxed">
+            Tell Detalo your car and the part. It checks real stores and returns only
+            listings that fit — with prices, fitment and OEM numbers.
+          </p>
+        </section>
+
+        {/* PAIEŠKA — integruota panelė */}
+        <form onSubmit={handleSubmit} className="bg-panel border border-white/8 rounded-xl p-3 flex flex-col gap-2 max-w-3xl">
+          {/* Automobilio pasirinkimas su autocomplete — praneša pilną automobilį per setCar. */}
+          <CarSelector onChange={setCar} />
+
+          <div className="flex flex-wrap gap-2 items-center">
+            <input
+              className="border border-white/10 rounded-lg px-4 py-2 w-64 bg-panel2 text-txt placeholder-dim"
+              type="text"
+              value={part}
+              onChange={(e) => setPart(e.target.value)}
+              placeholder="Part needed (e.g. front brake pads)"
+            />
+            <select
+              className="border border-white/10 rounded-lg px-4 py-2 bg-panel2 text-txt"
+              value={condition}
+              onChange={(e) => setCondition(e.target.value)}
+            >
+              <option value="Any">Any condition</option>
+              <option value="OEM">OEM / Original</option>
+              <option value="Aftermarket">Aftermarket</option>
+              <option value="Used">Used</option>
+            </select>
+            {/* Regionas — onChange DAR įsimena į localStorage (kad išliktų perkrovus). */}
+            <select
+              className="border border-white/10 rounded-lg px-4 py-2 bg-panel2 text-txt"
+              value={region}
+              onChange={(e) => {
+                setRegion(e.target.value);
+                localStorage.setItem('region', e.target.value);
+              }}
+            >
+              <option value="Europe">🇪🇺 Visa Europa</option>
+              <option value="Lithuania">🇱🇹 Lietuva</option>
+              <option value="Germany">🇩🇪 Vokietija</option>
+            </select>
+            <button
+              className="bg-frost text-frostink font-semibold px-6 py-2 rounded-lg hover:brightness-110 disabled:opacity-50"
+              type="submit"
+              disabled={loading}
+            >
+              Search
+            </button>
+          </div>
+        </form>
+
+        {loading && (
+          <p className="text-frost mt-4 animate-pulse">
+            🔧 Searching real stores for your part — this can take up to a minute...
+          </p>
+        )}
+        {error && <p className="text-red-400 mt-4">{error}</p>}
+        {checkedAt && <p className="text-dim text-sm mt-4">Checked {timeAgo(checkedAt)}</p>}
+
+        {/* Fitment įspėjimas — rodomas tik kai yra rezultatų */}
+        {results.length > 0 && (
+          <p className="text-muted text-sm mt-5 border-l-2 border-frost/60 pl-3">
+            Always verify the part fits your exact car (VIN / part number) before buying.
+          </p>
+        )}
+
+        {/* LT skaidrumo žinutė: Amazon/eBay neturi .lt — tik kai regionas Lietuva IR yra tokia parduotuvė. */}
+        {region === "Lithuania" &&
+          results.some(r => {
+            const s = (r.store || "").toLowerCase();
+            return s.includes("amazon") || s.includes("ebay");
+          }) && (
+          <p className="text-dim text-sm mt-2">
+            🇱🇹 Amazon ir eBay neturi lietuviškos svetainės — nuorodos veda į artimiausią ES parduotuvę, kuri veža į Lietuvą.
+          </p>
+        )}
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
+          {results.map(product => (
+            <ProductCard
+              key={product.name + product.store}
+              name={product.name}
+              price={product.price}
+              dealScore={product.dealScore}
+              store={product.store}
+              url={product.url}
+              image={product.image}
+              condition={product.condition}
+              fits={product.fits}
+              partNumber={product.partNumber}
+              isSaved={isSaved(product)}
+              onToggleSave={() => toggleSave(product)}
+            />
+          ))}
         </div>
-      )}
+
+        {savedItems.length > 0 && (
+          <div className="mt-12 pb-16">
+            <h2 className="text-2xl font-bold text-txt mb-4">Your Watchlist</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {savedItems.map(product => (
+                <ProductCard
+                  key={product.name + product.store}
+                  name={product.name}
+                  price={product.price}
+                  dealScore={product.dealScore}
+                  store={product.store}
+                  url={product.url}
+                  image={product.image}
+                  isSaved={isSaved(product)}
+                  onToggleSave={() => toggleSave(product)}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
