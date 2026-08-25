@@ -134,7 +134,7 @@ async function checkAndConsume(ip) {
 // ── PAŽADINA Supabase Edge Function (search-worker), kuri atlieka LĖTĄ paiešką ant Supabase. ──
 // Grąžina greitą ACK (~1s); pati paieška tęsiasi FONE Supabase pusėje iki 150s (ne Vercel 60s).
 async function triggerWorker(payload) {
-  await fetch(`${process.env.SUPABASE_URL}/functions/v1/search-worker`, {
+  const res = await fetch(`${process.env.SUPABASE_URL}/functions/v1/search-worker`, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_KEY}`,
@@ -142,6 +142,11 @@ async function triggerWorker(payload) {
     },
     body: JSON.stringify(payload),
   });
+  // fetch nemeta klaidos ant HTTP 4xx/5xx — patikrinam patys, kad blogas auth/pavadinimas
+  // iškart iškiltų (ne tyliai paliktų job'ą "pending" 90s).
+  if (!res.ok) {
+    throw new Error(`worker trigger failed: ${res.status}`);
+  }
 }
 
 // ── START: naršyklė kviečia čia. Grąžina GREITAI (cache arba jobId), nelaukia paieškos. ──
