@@ -45,35 +45,32 @@ async function runSearch(payload: any) {
     console.log(`[${jobId}] runSearch start`);
     const message = await anthropic.messages.create({
       model: 'claude-sonnet-4-6',
-      max_tokens: 1200,
+      max_tokens: 1500,
       tools: [
         // deno-lint-ignore no-explicit-any
-        // allowed_domains laikinai PAŠALINTAS — įtariam, kad jis verčia web search kabti >130s.
-        { type: 'web_search_20260209', name: 'web_search', max_uses: 1 } as any,
+        // SENESNIS web_search_20250305 — naujasis (dynamic filtering / code execution) KABO
+        // >150s sudėtingoms dalių užklausoms; senasis grįžta per ~15-30s. max_uses 4 — kad
+        // surinktų pakankamai duomenų 3 skelbimams.
+        { type: 'web_search_20250305', name: 'web_search', max_uses: 4 } as any,
       ],
       messages: [
         {
           role: 'user',
-          content: `Find a real, currently available CAR PART for this vehicle.
-Car: "${car}"
-Part needed: "${part}"
-Condition preference: "${condition}" (if "Any", include a mix; otherwise prefer that condition).
-
-First, based on the exact engine/variant, determine the correct part specification for this car.
-Then search the web — PRIORITIZE ${stores} — for 3 real listings that FIT this specific car, with REAL current prices in EUR.
-Prefer listings the buyer in this region can actually order (in stock, ships to them). Only include parts that genuinely fit the given car — fitment accuracy is critical.
-Each object must have:
+          content: `Search European car-parts stores — prioritize ${stores} — for the part "${part}" that fits this car: ${car} (condition preference: "${condition}").
+Based on the search results, return your 3 best real matches. Use the real product/brand and store names you actually found in the results.
+For price, use the price shown in a result, or your best estimate of the typical price from what you saw (approximate is fine — prices are shown to users as indicative).
+IMPORTANT: ALWAYS output the JSON array with the best available real data — never refuse or explain that you couldn't verify. Respond with ONLY a JSON array of 3 objects, each with:
 - id (number)
-- name (string, the real part name incl. brand)
-- price (number, the real current price in EUR)
-- store (string, the store where you found it)
-- url (string, direct link to the part's page)
-- image (string, direct URL to a photo of the part, ideally .jpg/.png/.webp)
+- name (string, real part name incl. brand)
+- price (number, EUR — real or best estimate from the results)
+- store (string, the store)
+- url (string, link to the part's page or the store's search for it)
+- image (string, direct photo URL if you saw one, else "")
 - condition (string: "OEM", "Aftermarket", or "Used")
-- partNumber (string, the manufacturer/OEM part number EXACTLY as shown on the real listing you found — do NOT guess or invent one; use "" if you do not actually see a part number)
-- fits (string, short note on fitment, e.g. "Fits BMW E46 320i 2000-2005")
-- dealScore (number 0-100: how good this price is vs the part's typical price)
-Respond with ONLY the JSON array, no other text.`,
+- partNumber (string, the OEM/manufacturer number if visible in the results, else "")
+- fits (string, short fitment note, e.g. "Fits VW Golf 7 2.0 TDI 2013-2020")
+- dealScore (number 0-100: how good the price is vs the part's typical price)
+Output ONLY the JSON array, no other text.`,
         },
       ],
     }, { timeout: 130000 }); // 130s saugiklis (< 150s wall clock) — kad kabimas taptų error
