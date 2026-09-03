@@ -25,9 +25,9 @@ export default function RegionGate({ onConfirm }) {
           </svg>
           <h1 className="text-2xl font-bold text-txt tracking-tight">Detalo</h1>
         </div>
-        <p className="text-muted mb-6">Find the right car part with AI</p>
+        <p className="text-muted mb-6">Rask tinkamą auto detalę su DI</p>
 
-        <p className="font-semibold text-txt mb-2">Choose your region</p>
+        <p className="font-semibold text-txt mb-2">Pasirink savo regioną</p>
         <div className="flex flex-col gap-2 mb-5">
           {REGION_OPTIONS.map(opt => (
             <button
@@ -54,7 +54,7 @@ export default function RegionGate({ onConfirm }) {
             className="mt-1 accent-[#7fd1e6]"
           />
           <span>
-            I understand prices are indicative and Detalo may earn a commission from links on this site.
+            Suprantu, kad kainos orientacinės ir Detalo gali gauti komisinį per nuorodas šioje svetainėje.
           </span>
         </label>
 
@@ -64,7 +64,7 @@ export default function RegionGate({ onConfirm }) {
           disabled={!canEnter}
           className="w-full bg-frost text-frostink font-semibold py-2.5 rounded-lg hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed"
         >
-          Enter
+          Įeiti
         </button>
       </div>
     </div>

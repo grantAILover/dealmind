@@ -4,9 +4,9 @@ import { track } from '@vercel/analytics';
 export default function ProductCard({ name, price, dealScore, store, url, image, condition, fits, partNumber, isSaved, onToggleSave }) {
   // Subtilus deal indikatorius (dot + žodis) vietoj loud spalvoto skaičiaus badge'o.
   let dealLabel, dealText, dotColor;
-  if (dealScore >= 80) { dealLabel = "Great price"; dealText = "text-frost"; dotColor = "bg-frost"; }
-  else if (dealScore >= 60) { dealLabel = "Fair price"; dealText = "text-amberw"; dotColor = "bg-amberw"; }
-  else { dealLabel = "Check price"; dealText = "text-dim"; dotColor = "bg-dim"; }
+  if (dealScore >= 80) { dealLabel = "Gera kaina"; dealText = "text-frost"; dotColor = "bg-frost"; }
+  else if (dealScore >= 60) { dealLabel = "Vidutinė kaina"; dealText = "text-amberw"; dotColor = "bg-amberw"; }
+  else { dealLabel = "Patikrink kainą"; dealText = "text-dim"; dotColor = "bg-dim"; }
 
   return (
     <div className="bg-panel border border-white/8 rounded-xl p-4 flex flex-col transition-colors hover:border-frost/35">
@@ -38,18 +38,18 @@ export default function ProductCard({ name, price, dealScore, store, url, image,
       <div className="flex flex-col gap-1.5 text-xs mb-3.5">
         {partNumber && (
           <div className="flex justify-between gap-2">
-            <span className="text-dim">OEM number</span>
+            <span className="text-dim">OEM numeris</span>
             <span className="text-muted font-mono">{partNumber}</span>
           </div>
         )}
         {condition && (
           <div className="flex justify-between gap-2 items-center">
-            <span className="text-dim">Type</span>
+            <span className="text-dim">Būklė</span>
             <span className="text-muted border border-white/12 rounded px-2 py-0.5">{condition}</span>
           </div>
         )}
         <div className="flex justify-between gap-2">
-          <span className="text-dim">Store</span>
+          <span className="text-dim">Parduotuvė</span>
           <span className="text-muted">{store}</span>
         </div>
       </div>
@@ -72,14 +72,14 @@ export default function ProductCard({ name, price, dealScore, store, url, image,
           onClick={() => track('view_deal', { store: store, dealScore: dealScore })}
           className="flex-1 flex items-center justify-center gap-1.5 bg-frost text-frostink font-semibold text-[13px] text-center px-3 py-2 rounded-lg hover:brightness-110"
         >
-          View deal
+          Žiūrėti
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
             <path d="M7 17L17 7M17 7H9M17 7v8" stroke="#08222c" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </a>
         <button
           onClick={onToggleSave}
-          aria-label={isSaved ? "Saved" : "Save"}
+          aria-label={isSaved ? "Išsaugota" : "Išsaugoti"}
           className={`px-3 py-2 rounded-lg border flex items-center ${isSaved ? 'bg-frost/15 border-frost/40 text-frost' : 'border-white/12 text-muted hover:text-txt'}`}
         >
           <svg width="15" height="15" viewBox="0 0 24 24" fill={isSaved ? '#7fd1e6' : 'none'}>

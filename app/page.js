@@ -99,7 +99,7 @@ export default function Home() {
       // Dienos limitas išnaudotas (429) — rodom aiškią žinutę, ne bendrą klaidą.
       if (response.status === 429) {
         const limitData = await response.json();
-        setError(limitData.message || "Daily search limit reached. Please try again tomorrow.");
+        setError(limitData.message || "Dienos paieškų limitas išnaudotas. Bandyk vėl rytoj.");
         return; // finally išjungs loading
       }
       if (!response.ok) {
@@ -118,7 +118,7 @@ export default function Home() {
         throw new Error("Unexpected response");
       }
     } catch (err) {
-      setError("Search took too long or failed. Please try again — new parts can take a minute to find.");
+      setError("Paieška užtruko per ilgai arba nepavyko. Bandyk dar kartą — naujų detalių paieška gali užtrukti minutę.");
     } finally {
       setLoading(false); // ir sėkmės, ir klaidos atveju — išjungiam loading
     }
@@ -131,10 +131,10 @@ export default function Home() {
 
   function timeAgo(timestamp) {
     const minutes = Math.floor((Date.now() - new Date(timestamp).getTime()) / 60000);
-    if (minutes < 1) return "just now";
-    if (minutes < 60) return `${minutes} min ago`;
+    if (minutes < 1) return "ką tik";
+    if (minutes < 60) return `prieš ${minutes} min`;
     const hours = Math.floor(minutes / 60);
-    return `${hours}h ago`;
+    return `prieš ${hours} val`;
   }
 
   return (
@@ -157,11 +157,11 @@ export default function Home() {
         {/* HERO — kairėn lygiuota, be gradiento/glow */}
         <section className="pt-16 pb-8 max-w-2xl">
           <h1 className="text-4xl font-bold tracking-tight leading-tight text-txt">
-            The exact part that fits your car — found for you.
+            Tiksliai tinkama detalė tavo automobiliui — surasta už tave.
           </h1>
           <p className="text-muted text-base mt-4 leading-relaxed">
-            Tell Detalo your car and the part. It checks real stores and returns only
-            listings that fit — with prices, fitment and OEM numbers.
+            Nurodyk automobilį ir detalę. Detalo patikrina realias parduotuves ir grąžina
+            tik tinkančius pasiūlymus — su kainomis, tinkamumu ir OEM numeriais.
           </p>
         </section>
 
@@ -176,17 +176,17 @@ export default function Home() {
               type="text"
               value={part}
               onChange={(e) => setPart(e.target.value)}
-              placeholder="Part needed (e.g. front brake pads)"
+              placeholder="Kokios detalės reikia? (pvz. priekinės stabdžių kaladėlės)"
             />
             <select
               className="border border-white/10 rounded-lg px-4 py-2 bg-panel2 text-txt"
               value={condition}
               onChange={(e) => setCondition(e.target.value)}
             >
-              <option value="Any">Any condition</option>
-              <option value="OEM">OEM / Original</option>
-              <option value="Aftermarket">Aftermarket</option>
-              <option value="Used">Used</option>
+              <option value="Any">Bet kokia būklė</option>
+              <option value="OEM">OEM / Originali</option>
+              <option value="Aftermarket">Neoriginali (aftermarket)</option>
+              <option value="Used">Naudota</option>
             </select>
             {/* Regionas — onChange DAR įsimena į localStorage (kad išliktų perkrovus). */}
             <select
@@ -206,23 +206,23 @@ export default function Home() {
               type="submit"
               disabled={loading}
             >
-              Search
+              Ieškoti
             </button>
           </div>
         </form>
 
         {loading && (
           <p className="text-frost mt-4 animate-pulse">
-            🔧 Searching real stores for your part — this can take up to a minute...
+            🔧 Ieškome tavo detalės realiose parduotuvėse — gali užtrukti iki minutės...
           </p>
         )}
         {error && <p className="text-red-400 mt-4">{error}</p>}
-        {checkedAt && <p className="text-dim text-sm mt-4">Checked {timeAgo(checkedAt)}</p>}
+        {checkedAt && <p className="text-dim text-sm mt-4">Tikrinta {timeAgo(checkedAt)}</p>}
 
         {/* Fitment įspėjimas — rodomas tik kai yra rezultatų */}
         {results.length > 0 && (
           <p className="text-muted text-sm mt-5 border-l-2 border-frost/60 pl-3">
-            Always verify the part fits your exact car (VIN / part number) before buying.
+            Prieš pirkdamas visada patikrink, ar detalė tinka tavo konkrečiam automobiliui (VIN / detalės numeris).
           </p>
         )}
 
@@ -258,7 +258,7 @@ export default function Home() {
 
         {savedItems.length > 0 && (
           <div className="mt-12 pb-16">
-            <h2 className="text-2xl font-bold text-txt mb-4">Your Watchlist</h2>
+            <h2 className="text-2xl font-bold text-txt mb-4">Mano sąrašas</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {savedItems.map(product => (
                 <ProductCard

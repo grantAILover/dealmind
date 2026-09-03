@@ -45,7 +45,7 @@ export default function CarSelector({ onChange }) {
           type="text"
           value={makeQuery}
           onChange={(e) => { setMakeQuery(e.target.value); setSelectedMake(""); }}
-          placeholder="Car make (e.g. Volkswagen)"
+          placeholder="Markė (pvz. Volkswagen)"
         />
         {suggestions.length > 0 && (
           <ul className="absolute z-10 w-full bg-panel2 border border-white/10 rounded-lg mt-1 shadow-lg max-h-60 overflow-auto">
@@ -69,7 +69,7 @@ export default function CarSelector({ onChange }) {
         onChange={(e) => setYear(e.target.value)}
         disabled={!selectedMake}
       >
-        <option value="">Year</option>
+        <option value="">Metai</option>
         {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
       </select>
 
@@ -79,7 +79,7 @@ export default function CarSelector({ onChange }) {
         type="text"
         value={model}
         onChange={(e) => setModel(e.target.value)}
-        placeholder="Model + engine (e.g. Golf 6 1.6 TDI 77kW)"
+        placeholder="Modelis + variklis (pvz. Golf 6 1.6 TDI 77kW)"
         disabled={!selectedMake || !year}
       />
     </div>

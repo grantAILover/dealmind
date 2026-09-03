@@ -190,7 +190,7 @@ export async function POST(request) {
   if (!gate.allowed) {
     return Response.json({
       error: 'rate_limit',
-      message: 'You have used your 3 free searches. Please try again tomorrow.',
+      message: 'Išnaudojai 3 nemokamas paieškas. Bandyk vėl rytoj.',
       resetAt: gate.resetAt,
     }, { status: 429 });
   }

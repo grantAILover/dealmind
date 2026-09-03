@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "Detalo — Find the right car part with AI",
-  description: "AI-powered car-parts finder: enter your car and the part, get real listings that fit — with prices, fitment and OEM numbers.",
+  title: "Detalo — Rask tinkamą auto detalę su DI",
+  description: "DI paremtas auto detalių ieškiklis: įvesk automobilį ir detalę — gauk realius, tinkančius pasiūlymus su kainomis, tinkamumu ir OEM numeriais.",
 };
 
 export default function RootLayout({ children }) {
@@ -26,8 +26,8 @@ export default function RootLayout({ children }) {
       <body className="min-h-full flex flex-col">
         {children}
         <footer className="text-center text-xs text-dim px-6 py-8 mt-auto border-t border-white/8">
-          Detalo may earn a commission when you buy through links on this site.
-          Prices and availability are indicative and may change.
+          Detalo gali gauti komisinį, kai perki per nuorodas šioje svetainėje.
+          Kainos ir prieinamumas yra orientaciniai ir gali keistis.
         </footer>
         <Analytics />
       </body>
