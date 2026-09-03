@@ -66,10 +66,11 @@ IMPORTANT: ALWAYS output the JSON array with the best available real data — ne
 - store (string, the store)
 - url (string, link to the part's page or the store's search for it)
 - image (string, direct photo URL if you saw one, else "")
-- condition (string: "OEM", "Aftermarket", or "Used")
+- condition (string IN LITHUANIAN: "Originali" for OEM, "Neoriginali" for aftermarket, or "Naudota" for used)
 - partNumber (string, the OEM/manufacturer number if visible in the results, else "")
-- fits (string, short fitment note, e.g. "Fits VW Golf 7 2.0 TDI 2013-2020")
+- fits (string, short fitment note WRITTEN IN LITHUANIAN, e.g. "Tinka VW Golf 7 2.0 TDI 2013–2020")
 - dealScore (number 0-100: how good the price is vs the part's typical price)
+Keep "name" and "store" as found in the results (original language, for searchability). Write "condition" and "fits" in Lithuanian.
 Output ONLY the JSON array, no other text.`,
         },
       ],
