@@ -70,12 +70,19 @@ const REGIONS = {
 function storeSearchUrl(product, regionCfg) {
   const q = encodeURIComponent(product.name || '');
   const store = (product.store || '').toLowerCase();
-  // Tik patikrintai veikiantys formatai, domenas pagal regioną. Kiti → Google.
+  // Tik patikrintai veikiantys formatai, domenas pagal regioną.
   if (store.includes('amazon')) return `${regionCfg.amazon}${q}`;
   if (store.includes('ebay')) return `${regionCfg.ebay}${q}`;
   if (store.includes('autodoc')) return `${regionCfg.autodoc}${q}`;
-  // Nežinoma / nepatikrinta parduotuvė → regiono Google paieška.
-  return `${regionCfg.google}${q}`;
+
+  // Nežinoma parduotuvė → Google, BET nukreiptas į tą parduotuvę:
+  // - jei "store" atrodo kaip domenas (pvz. "bmwakses.lt") → Google su site:domenas → veda į ją;
+  // - kitaip (pvz. "kfzteile24") → įtraukiam parduotuvės pavadinimą į užklausą.
+  const storeRaw = (product.store || '').trim();
+  const name = product.name || '';
+  const looksLikeDomain = /^[^\s]+\.[a-z]{2,}$/i.test(storeRaw); // vienas žodis su .tld
+  const query = looksLikeDomain ? `${name} site:${storeRaw}` : `${name} ${storeRaw}`;
+  return `${regionCfg.google}${encodeURIComponent(query)}`;
 }
 
 function withAffiliate(product, regionCfg) {

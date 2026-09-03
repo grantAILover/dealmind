@@ -56,7 +56,8 @@ export default function ProductCard({ name, price, dealScore, store, url, image,
 
       {/* Kaina + deal indikatorius */}
       <div className="flex items-baseline justify-between mb-3.5 mt-auto">
-        <span className="text-xl font-bold text-txt tracking-tight">€{price}</span>
+        {/* "~" + suapvalinta = aiškiai APYTIKSLĖ kaina (neturim realaus kainų feed'o; nuoroda veda į paiešką). */}
+        <span className="text-xl font-bold text-txt tracking-tight">~€{Math.round(Number(price)) || price}</span>
         <span className={`flex items-center gap-1.5 text-[11.5px] ${dealText}`}>
           <span className={`w-1.5 h-1.5 rounded-full ${dotColor}`} />
           {dealLabel}
