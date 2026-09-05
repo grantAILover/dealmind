@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "Detalo — Rask tinkamą auto detalę su DI",
-  description: "DI paremtas auto detalių ieškiklis: įvesk automobilį ir detalę — gauk realius, tinkančius pasiūlymus su kainomis, tinkamumu ir OEM numeriais.",
+  title: "Detalo — Mopedų dalių turgus",
+  description: "Pirk ir parduok mopedų dalis saugiai. Vinted stiliaus turgus mopedų bendruomenei — tikros kainos, aiškūs skelbimai, be Facebook grupių chaoso.",
 };
 
 export default function RootLayout({ children }) {
@@ -26,8 +26,7 @@ export default function RootLayout({ children }) {
       <body className="min-h-full flex flex-col">
         {children}
         <footer className="text-center text-xs text-dim px-6 py-8 mt-auto border-t border-white/8">
-          Detalo gali gauti komisinį, kai perki per nuorodas šioje svetainėje.
-          Kainos ir prieinamumas yra orientaciniai ir gali keistis.
+          Detalo — mopedų dalių turgus. Skelbimus kuria patys vartotojai.
         </footer>
         <Analytics />
       </body>
