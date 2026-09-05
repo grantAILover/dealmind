@@ -7,8 +7,8 @@ const POINTS = [
     body: 'Pinigai saugomi, kol gauni dalį. Ne kaip FB — jokio „sumokėjai ir dingo".',
   },
   {
-    title: 'Tikros kainos',
-    body: 'Pardavėjas nustato kainą, matai ją iškart. Jokio derybų chaoso žinutėse.',
+    title: 'Kaina + pasiūlymai',
+    body: 'Matai kainą iškart. O nori pigiau — pasiūlyk savo kainą vienu mygtuku, pardavėjas priima arba atmeta. Aiškios derybos, be „kokia paskutinė?" chaoso.',
   },
   {
     title: 'Mopedų bendruomenei',
