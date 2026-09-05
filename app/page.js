@@ -1,64 +1,71 @@
-import { createClient } from '@supabase/supabase-js';
-import Link from 'next/link';
-import ListingCard from '@/components/ListingCard';
+import WaitlistForm from '@/components/WaitlistForm';
 
-// Server komponentas — nuskaito skelbimus serveryje (service key apeina RLS; vieša peržiūra).
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
+// Value points — kodėl Detalo, ne Facebook grupės.
+const POINTS = [
+  {
+    title: 'Pirkėjo apsauga',
+    body: 'Pinigai saugomi, kol gauni dalį. Ne kaip FB — jokio „sumokėjai ir dingo".',
+  },
+  {
+    title: 'Tikros kainos',
+    body: 'Pardavėjas nustato kainą, matai ją iškart. Jokio derybų chaoso žinutėse.',
+  },
+  {
+    title: 'Mopedų bendruomenei',
+    body: 'Nuo senų Karpaty ir Riga iki modernių skuterių — viskas vienoje vietoje.',
+  },
+  {
+    title: 'Aiškūs skelbimai',
+    body: 'Nuotraukos, būklė, markė, modelis, vieta. Susirandi tinkamą dalį per minutę.',
+  },
+];
 
-// Kad feed'as visada rodytų naujausius (o ne cache'intą build'ą).
-export const dynamic = 'force-dynamic';
-
-export default async function Home() {
-  const { data: listings } = await supabase
-    .from('listings')
-    .select('*')
-    .eq('status', 'active')
-    .order('created_at', { ascending: false })
-    .limit(60);
-
-  const items = listings || [];
-
+export default function Home() {
   return (
     <div className="min-h-screen">
-      <div className="max-w-6xl mx-auto px-6">
+      <div className="max-w-4xl mx-auto px-6">
         {/* NAV */}
         <nav className="flex items-center justify-between h-16 border-b border-white/8">
-          <Link href="/" className="flex items-center gap-2.5 font-semibold tracking-tight text-txt">
+          <div className="flex items-center gap-2.5 font-semibold tracking-tight text-txt">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
               <path d="M8 5.3h8l4 6.9-4 6.9H8l-4-6.9 4-6.9z" stroke="#7fd1e6" strokeWidth="1.6" strokeLinejoin="round" />
               <circle cx="12" cy="12.2" r="3.1" stroke="#7fd1e6" strokeWidth="1.6" />
             </svg>
             Detalo
-          </Link>
-          <Link
-            href="/sell"
-            className="bg-frost text-frostink font-semibold text-sm px-4 py-2 rounded-lg hover:brightness-110"
-          >
-            + Parduoti
-          </Link>
+          </div>
+          <span className="text-xs text-frost border border-frost/40 rounded-full px-3 py-1">Netrukus</span>
         </nav>
 
         {/* HERO */}
-        <section className="pt-14 pb-8 max-w-2xl">
-          <h1 className="text-4xl font-bold tracking-tight leading-tight text-txt">
-            Mopedų dalys — pirk ir parduok saugiai.
+        <section className="pt-20 pb-4 max-w-2xl">
+          <h1 className="text-5xl font-bold tracking-tight leading-[1.05] text-txt">
+            Mopedų dalių turgus.
+            <br />
+            <span className="text-frost">Saugus.</span>
           </h1>
-          <p className="text-muted text-base mt-4 leading-relaxed">
-            Vieta, kur mopedų bendruomenė perka ir parduoda dalis — su tikromis kainomis,
-            aiškiais skelbimais ir apsauga. Be „Facebook grupių" chaoso.
+          <p className="text-muted text-lg mt-5 leading-relaxed">
+            Pirk ir parduok mopedų dalis be Facebook grupių chaoso ir sukčių —
+            su pirkėjo apsauga, tikromis kainomis ir aiškiais skelbimais.
           </p>
+
+          <div className="mt-8">
+            <p className="text-txt font-semibold mb-3">Užsiregistruok — pranešime, kai startuosim:</p>
+            <WaitlistForm />
+          </div>
         </section>
 
-        {/* FEED */}
-        {items.length === 0 ? (
-          <p className="text-dim mt-8">Kol kas skelbimų nėra. Būk pirmas — <Link href="/sell" className="text-frost">įkelk skelbimą</Link>.</p>
-        ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-6 pb-16">
-            {items.map((listing) => (
-              <ListingCard key={listing.id} listing={listing} />
-            ))}
-          </div>
-        )}
+        {/* VALUE POINTS */}
+        <section className="grid sm:grid-cols-2 gap-4 mt-16 pb-20">
+          {POINTS.map((p) => (
+            <div key={p.title} className="bg-panel border border-white/8 rounded-xl p-5">
+              <div className="flex items-center gap-2 mb-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-frost" />
+                <h3 className="text-txt font-semibold">{p.title}</h3>
+              </div>
+              <p className="text-muted text-sm leading-relaxed">{p.body}</p>
+            </div>
+          ))}
+        </section>
       </div>
     </div>
   );
