@@ -1,13 +1,16 @@
 import { createClient } from '@supabase/supabase-js';
 import Link from 'next/link';
 import ListingCard from '@/components/ListingCard';
+import { requireDevAccess } from '@/lib/devAuth';
 
-// Marketplace naršymo feed'as (kol kas /browse — dev/preview; landing yra "/").
+// Marketplace naršymo feed'as (kol kas /browse — dev peržiūra; landing yra "/").
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 
 export const dynamic = 'force-dynamic';
 
 export default async function Browse() {
+  await requireDevAccess(); // tik kūrėjas (slaptažodis) mato marketplace
+
   const { data: listings } = await supabase
     .from('listings')
     .select('*')

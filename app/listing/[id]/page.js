@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { requireDevAccess } from '@/lib/devAuth';
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 
@@ -8,6 +9,7 @@ export const dynamic = 'force-dynamic';
 
 // Next 16: params yra async — būtina await'inti.
 export default async function ListingPage({ params }) {
+  await requireDevAccess(); // tik kūrėjas mato skelbimus (kol landing režimas)
   const { id } = await params;
 
   const { data: listing } = await supabase
